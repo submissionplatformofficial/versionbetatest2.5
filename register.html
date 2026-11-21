@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สมัครสมาชิก | ระบบส่งงานและสั่งงานออนไลน์</title>
+    <!-- Favicon Icon -->
+    <link rel="icon" type="image/png" href="photo/icon1.png">
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            800: '#0F172A',
+                            900: '#0B132B',
+                            950: '#050B1A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0B132B 0%, #1C2541 50%, #3A506B 100%);
+        }
+        .custom-dropdown-list {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        /* --- iOS Loading Checkmark & Crossmark Animation Style --- */
+        .loading-modal-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 35px 25px;
+            background: #1e293b;
+            color: #ffffff;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 90%;
+            max-width: 320px;
+            margin: auto;
+        }
+
+        .loading-modal-box p {
+            color: #f1f5f9 !important;
+            margin-bottom: 0 !important;
+        }
+
+        .shake {
+            animation: shake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-2px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+        .ios-loader-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .ios-loader {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: #334155;
+            stroke-width: 6;
+        }
+
+        .circle-spinner {
+            fill: none;
+            stroke: #f59e0b;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 220;
+            stroke-dashoffset: 160;
+            animation: spin 1.2s linear infinite;
+            transform-origin: center;
+            transition: all 0.4s ease-in-out;
+        }
+
+        .icon-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        .checkmark-path {
+            fill: none;
+            stroke: #10b981;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+            transition: stroke-dashoffset 0.4s cubic-bezier(0.65, 0, 0.45, 1) 0.2s;
+        }
+
+        .crossmark-path {
+            fill: none;
+            stroke: #ef4444;
+            stroke-width: 6;
+            stroke-linecap: round;
+            stroke-dasharray: 40;
+            stroke-dashoffset: 40;
+            transition: stroke-dashoffset 0.3s cubic-bezier(0.65, 0, 0.45, 1);
+        }
+
+        .crossmark-path.line2 {
+            transition-delay: 0.15s;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .ios-loader-wrapper.success .circle-spinner {
+            animation: none;
+            stroke: #10b981;
+            stroke-dashoffset: 0;
+            transform: rotate(0deg);
+        }
+
+        .ios-loader-wrapper.success .checkmark-path {
+            stroke-dashoffset: 0;
+        }
+
+        .ios-loader-wrapper.error .circle-spinner {
+            animation: none;
+            stroke: #ef4444;
+            stroke-dashoffset: 0;
+            transform: rotate(0deg);
+        }
+
+        .ios-loader-wrapper.error .crossmark-path {
+            stroke-dashoffset: 0;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4 sm:p-6 text-slate-800">
+
+    <div class="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden my-8 border border-white/20">
+        
+        <!-- Form Header -->
+        <div class="bg-slate-900 text-white p-6 sm:p-8 text-center relative overflow-hidden">
+            <div class="absolute -right-10 -top-10 w-40 h-40 bg-amber-500/10 rounded-full blur-2xl"></div>
+            <div class="absolute -left-10 -bottom-10 w-40 h-40 bg-blue-500/10 rounded-full blur-2xl"></div>
+            
+            <div class="relative z-10">
+                <a href="index.html" class="inline-flex items-center gap-2 text-slate-400 hover:text-amber-400 text-xs font-medium mb-4 transition-colors">
+                    <i class="fa-solid fa-arrow-left"></i> กลับสู่หน้าหลัก
+                </a>
+                <div class="w-14 h-14 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center text-slate-950 font-bold mx-auto mb-3 shadow-lg">
+                    <i class="fa-solid fa-user-plus text-2xl"></i>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold">ลงทะเบียนเข้าใช้งาน</h2>
+                <p class="text-slate-400 text-xs sm:text-sm mt-1">กรอกข้อมูลเพื่อเปิดบัญชีผู้ใช้สำหรับระบบส่งงานและสั่งงานออนไลน์</p>
+            </div>
+        </div>
+
+        <!-- Registration Form -->
+        <form id="registerForm" onsubmit="handleRegister(event)" class="p-6 sm:p-8 space-y-5">
+            
+            <!-- เลือกบทบาทผู้ใช้งาน (Role Selection) -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                    สิทธิ์การใช้งาน / บทบาท <span class="text-rose-500">*</span>
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="cursor-pointer">
+                        <input type="radio" name="role" value="student" class="peer sr-only" checked onchange="toggleRoleFields()">
+                        <div class="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 peer-checked:border-blue-900 peer-checked:bg-blue-50 text-slate-600 peer-checked:text-blue-900 font-medium text-sm transition-all text-center">
+                            <i class="fa-solid fa-user-graduate"></i> นักเรียน / นักศึกษา
+                        </div>
+                    </label>
+                    <label class="cursor-pointer">
+                        <input type="radio" name="role" value="teacher" class="peer sr-only" onchange="toggleRoleFields()">
+                        <div class="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-slate-200 peer-checked:border-blue-900 peer-checked:bg-blue-50 text-slate-600 peer-checked:text-blue-900 font-medium text-sm transition-all text-center">
+                            <i class="fa-solid fa-chalkboard-user"></i> อาจารย์ / ครูผู้สอน
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- ชื่อ-นามสกุล -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="firstname" class="block text-sm font-semibold text-slate-700 mb-1">ชื่อจริง <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="firstname" required placeholder="First Name" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label for="lastname" class="block text-sm font-semibold text-slate-700 mb-1">นามสกุล <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <i class="fa-solid fa-user absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="lastname" required placeholder="Last Name" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- วัน/เดือน/ปีเกิด -->
+            <div>
+                <label for="dobDay" class="block text-sm font-semibold text-slate-700 mb-1">
+                    วัน/เดือน/ปีเกิด <span class="text-rose-500">*</span>
+                </label>
+                <!-- ค่าที่ส่งไประบบ (รูปแบบ YYYY-MM-DD ค.ศ.) -->
+                <input type="hidden" id="dob">
+                <div class="grid grid-cols-[1fr_1.6fr_1.8fr] gap-2 sm:gap-3">
+                    <select id="dobDay" required onchange="updateDob()" aria-label="วันเกิด" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                        <option value="">วัน</option>
+                    </select>
+                    <select id="dobMonth" required onchange="updateDob()" aria-label="เดือนเกิด" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                        <option value="">เดือน</option>
+                    </select>
+                    <select id="dobYear" required onchange="updateDob()" aria-label="ปีเกิด" class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                        <option value="">ปี (พ.ศ.)</option>
+                    </select>
+                </div>
+                <p id="dobPreview" class="text-xs text-slate-500 mt-1.5 hidden"></p>
+            </div>
+
+            <!-- จังหวัด -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">
+                    จังหวัด <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-map-location-dot absolute left-3.5 top-3.5 text-slate-400 text-sm z-10"></i>
+                    <input type="hidden" id="province" required>
+                    <button type="button" id="provinceBtn" onclick="toggleDropdown('provinceDropdown')" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 bg-white text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 flex items-center justify-between">
+                        <span id="provinceLabel" class="text-slate-400">เลือก หรือ พิมพ์ค้นหาจังหวัด...</span>
+                        <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                    </button>
+                    <!-- Dropdown Box -->
+                    <div id="provinceDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 space-y-2">
+                        <input type="text" id="provinceSearch" oninput="filterProvinces()" placeholder="พิมพ์ชื่อจังหวัดเพื่อค้นหา..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-900">
+                        <div id="provinceList" class="custom-dropdown-list divide-y divide-slate-50 text-xs sm:text-sm text-slate-700">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- สถาบัน / สถานศึกษา -->
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">
+                    สถาบัน / สถานศึกษา <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-school absolute left-3.5 top-3.5 text-slate-400 text-sm z-10"></i>
+                    <input type="hidden" id="institution" required>
+                    <button type="button" id="institutionBtn" onclick="toggleDropdown('institutionDropdown')" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 bg-white text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 flex items-center justify-between">
+                        <span id="institutionLabel" class="text-slate-400">กรุณาเลือกจังหวัดก่อนเลือกสถาบัน...</span>
+                        <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                    </button>
+                    <!-- Dropdown Box -->
+                    <div id="institutionDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 space-y-2">
+                        <input type="text" id="institutionSearch" oninput="filterInstitutions()" placeholder="พิมพ์ชื่อสถาบันเพื่อค้นหา..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-900">
+                        <div id="institutionList" class="custom-dropdown-list divide-y divide-slate-50 text-xs sm:text-sm text-slate-700">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- แผนก / สาขาวิชา -->
+            <div id="departmentFieldGroup" class="hidden">
+                <label class="block text-sm font-semibold text-slate-700 mb-1">
+                    แผนกสาขาวิชา <span class="text-rose-500">*</span>
+                </label>
+                <div class="relative">
+                    <i class="fa-solid fa-sitemap absolute left-3.5 top-3.5 text-slate-400 text-sm z-10"></i>
+                    <input type="hidden" id="department">
+                    <button type="button" id="departmentBtn" onclick="toggleDropdown('departmentDropdown')" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-300 bg-white text-left text-sm focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 flex items-center justify-between">
+                        <span id="departmentLabel" class="text-slate-400">เลือก หรือ พิมพ์ค้นหาแผนกสาขา...</span>
+                        <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                    </button>
+                    <!-- Dropdown Box -->
+                    <div id="departmentDropdown" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-30 p-2 space-y-2">
+                        <input type="text" id="departmentSearch" oninput="filterDepartments()" placeholder="พิมพ์ชื่อแผนกสาขาเพื่อค้นหา..." class="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-900">
+                        <div id="departmentList" class="custom-dropdown-list divide-y divide-slate-50 text-xs sm:text-sm text-slate-700">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- รหัสนักเรียน & ระดับชั้น -->
+            <div id="studentFieldsGroup" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div id="studentCodeField">
+                    <label for="userCode" class="block text-sm font-semibold text-slate-700 mb-1">
+                        รหัสประจำตัวนักเรียน <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-id-card absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="text" id="userCode" required placeholder="เช่น 6630001" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                    </div>
+                </div>
+
+                <div id="studentLevelField">
+                    <label for="studentLevel" class="block text-sm font-semibold text-slate-700 mb-1">
+                        ระดับชั้น <span class="text-rose-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-layer-group absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <select id="studentLevel" required disabled class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                            <option value="">กรุณาเลือกสถาบันก่อน...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- อีเมล -->
+            <div>
+                <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">อีเมล <span class="text-rose-500">*</span></label>
+                <div class="relative">
+                    <i class="fa-solid fa-envelope absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                    <input type="email" id="email" required placeholder="student@school.ac.th" class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                </div>
+            </div>
+
+            <!-- รหัสผ่าน & ยืนยันรหัสผ่าน -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-slate-700 mb-1">รหัสผ่าน <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <i class="fa-solid fa-lock absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="password" id="password" required minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" class="w-full pl-10 pr-11 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                        <button type="button" onclick="togglePasswordVisibility('password', this)" aria-label="แสดง/ซ่อนรหัสผ่าน" tabindex="-1" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-900 transition-colors">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label for="confirmPassword" class="block text-sm font-semibold text-slate-700 mb-1">ยืนยันรหัสผ่าน <span class="text-rose-500">*</span></label>
+                    <div class="relative">
+                        <i class="fa-solid fa-shield-halved absolute left-3.5 top-3.5 text-slate-400 text-sm"></i>
+                        <input type="password" id="confirmPassword" required placeholder="กรอกรหัสผ่านอีกครั้ง" class="w-full pl-10 pr-11 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900 text-sm">
+                        <button type="button" onclick="togglePasswordVisibility('confirmPassword', this)" aria-label="แสดง/ซ่อนรหัสผ่าน" tabindex="-1" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-900 transition-colors">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ข้อตกลงเงื่อนไข -->
+            <div class="flex items-start gap-2 pt-2">
+                <input type="checkbox" id="terms" required class="mt-1 rounded text-blue-900 focus:ring-blue-900">
+                <label for="terms" class="text-xs text-slate-600 leading-relaxed">
+                    ฉันยอมรับ <button type="button" onclick="openModal('termsModal')" class="text-blue-900 underline font-medium hover:text-blue-700">เงื่อนไขการใช้งาน</button> และ <button type="button" onclick="openModal('privacyModal')" class="text-blue-900 underline font-medium hover:text-blue-700">นโยบายความเป็นส่วนตัว</button> ของระบบสารสนเทศ
+                </label>
+            </div>
+
+            <!-- ปุ่มดำเนินการ -->
+            <div class="pt-2 space-y-3">
+                <button type="submit" id="submitBtn" class="w-full py-3.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-semibold text-sm shadow-lg shadow-blue-900/20 transition-all hover:scale-[1.01] flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-user-check"></i> ยืนยันการลงทะเบียน
+                </button>
+                <div class="text-center text-xs text-slate-500 pt-2">
+                    มีบัญชีผู้ใช้อยู่อยู่แล้ว? <a href="index.html" class="text-blue-900 font-semibold hover:underline">เข้าสู่ระบบที่นี่</a>
+                </div>
+            </div>
+
+        </form>
+
+    </div>
+
+    <!-- Modal อนิเมชั่นโหลด / สำเร็จ / ผิดพลาด -->
+    <div id="loading-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="loading-modal-box" id="modalBox">
+            <div class="ios-loader-wrapper" id="loaderWrapper">
+                <svg class="ios-loader" viewBox="0 0 80 80">
+                    <circle class="circle-bg" cx="40" cy="40" r="35" />
+                    <circle class="circle-spinner" cx="40" cy="40" r="35" />
+                </svg>
+                <svg class="icon-svg" viewBox="0 0 80 80">
+                    <path class="checkmark-path" d="M30 43 L37 51 L51 31" />
+                </svg>
+                <svg class="icon-svg" viewBox="0 0 80 80">
+                    <path class="crossmark-path line1" d="M28 28 L52 52" />
+                    <path class="crossmark-path line2" d="M52 28 L28 52" />
+                </svg>
+            </div>
+            <p id="loading-text">กำลังบันทึกข้อมูล...</p>
+        </div>
+    </div>
+
+    <!-- Modal 1: เงื่อนไขการใช้งาน -->
+    <div id="termsModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-base sm:text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-file-contract text-blue-900"></i> ข้อตกลงและเงื่อนไขการใช้งาน
+                </h3>
+                <button type="button" onclick="closeModal('termsModal')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <h4 class="font-bold text-slate-900 text-center text-sm sm:text-base border-b pb-2">ข้อตกลงและเงื่อนไขการใช้งานแพลตฟอร์มสั่งงานและส่งงานออนไลน์<br><span class="text-xs font-normal text-slate-500">(Terms and Conditions of Service)</span></h4>
+                
+                <p><strong>1. วัตถุประสงค์และขอบเขตการใช้งาน</strong><br>
+                ข้อตกลงนี้ทำขึ้นเพื่อกำหนดสิทธิ หน้าที่ และความรับผิดชอบระหว่างผู้ให้บริการแพลตฟอร์ม ("ระบบ") กับผู้ใช้งาน ("ครูผู้สอน/ผู้สั่งงาน" และ "นักเรียน/ผู้ส่งงาน") โดยผู้ใช้งานทุกคนต้องยอมรับเงื่อนไขนี้ก่อนเริ่มใช้งานระบบ</p>
+
+                <p><strong>2. บัญชีผู้ใช้งานและการรักษาความปลอดภัย</strong><br>
+                • <strong>การลงทะเบียน:</strong> ผู้ใช้งานต้องกรอกข้อมูลที่เป็นจริง Accurate และเป็นปัจจุบัน เช่น ชื่อ-นามสกุล รหัสนักเรียน/รหัสพนักงาน หรืออีเมล<br>
+                • <strong>การดูแลบัญชี:</strong> ผู้ใช้งานมีหน้าที่เก็บรักษาชื่อผู้ใช้ (Username) และรหัสผ่าน (Password) เป็นความลับ ห้ามมิให้ผู้อื่นนำไปใช้หากเกิดความเสียหายจากการละเลย ผู้ใช้งานต้องรับผิดชอบด้วยตนเอง<br>
+                • <strong>การระงับบัญชี:</strong> แพลตฟอร์มมีสิทธิ์ระงับหรือยกเลิกบัญชีผู้ใช้งานได้ทันที หากพบว่าข้อมูลเป็นเท็จหรือมีการใช้งานที่ละเมิดข้อตกลง</p>
+
+                <p><strong>3. สิทธิและเงื่อนไขสำหรับผู้สั่งงาน (ครู/ผู้มอบหมายงาน)</strong><br>
+                • <strong>การสร้างและมอบหมายงาน:</strong> ผู้สั่งงานสามารถสั่งงาน กำหนดเกณฑ์คะแนน กำหนดวัน-เวลาส่งงาน (Deadline) และแนบไฟล์ประกอบการเรียนรู้ได้<br>
+                • <strong>การให้คะแนนและติชม:</strong> การตรวจงาน ให้คะแนน และแสดงความคิดเห็น ต้องเป็นไปเพื่อการพัฒนาเรียนรู้ ปราศจากข้อความสร้างความเกลียดชัง หรือการลบหลู่ผู้เรียน<br>
+                • <strong>การจัดการข้อมูล:</strong> ผู้สั่งงานมีสิทธิ์เข้าถึง แก้ไข หรือจัดการไฟล์งานของนักเรียนในรายวิชาที่ตนเองดูแลได้ตามขอบเขตการสอน</p>
+
+                <p><strong>4. สิทธิและเงื่อนไขสำหรับผู้ส่งงาน (นักเรียน/ผู้รับมอบหมายงาน)</strong><br>
+                • <strong>การส่งงาน:</strong> ผู้ส่งงานต้องอัปโหลดไฟล์งานตามประเภทไฟล์ ขนาดไฟล์ และส่งภายในเวลาที่กำหนด หากส่งล่าช้า ระบบจะบันทึกสถานะ "ส่งเกินเวลา" (Late Submission) ตามเกณฑ์ที่กำหนดไว้<br>
+                • <strong>ความถูกต้องของผลงาน:</strong> ผลงานที่อัปโหลดต้องเป็นผลงานของผู้ส่งงานเอง หรืออ้างอิงแหล่งที่มาอย่างถูกต้อง ห้ามทำการคัดลอก คัดลอกผลงานผู้อื่น (Plagiarism) หรือแอบอ้างงานของบุคคลอื่นส่งโดยเด็ดขาด</p>
+
+                <p><strong>5. ข้อห้ามและนโยบายเนื้อหา (Content & Security Policy)</strong><br>
+                ห้ามผู้ใช้งานอัปโหลด แนบลิงก์ หรือเผยแพร่ข้อมูลประเภทดังต่อไปนี้เข้าสู่ระบบ:<br>
+                • เนื้อหาที่ผิดกฎหมาย ละเมิดลิขสิทธิ์ สิทธิบัตร หรือทรัพย์สินทางปัญญาของผู้อื่น<br>
+                • ไฟล์ที่มีไวรัส มัลแวร์ หรือโค้ดที่เป็นอันตรายต่อระบบและอุปกรณ์อื่น<br>
+                • ข้อความ หรือภาพที่เป็นลามกอนาจาร สร้างความเกลียดชัง (Hate Speech) หรือคุกคามผู้อื่น<br>
+                • ข้อมูลส่วนบุคคลที่ละเอียดอ่อนของบุคคลอื่นโดยไม่ได้รับยินยอม</p>
+
+                <p><strong>6. ทรัพย์สินทางปัญญาและการใช้ข้อมูล</strong><br>
+                • <strong>สิทธิ์ในผลงาน:</strong> ลิขสิทธิ์ในผลงานและไฟล์งานที่อัปโหลดเป็นของผู้สร้างสรรค์งาน (ผู้ส่งงาน/ผู้สั่งงาน)<br>
+                • <strong>การอนุญาตใช้สิทธิ์:</strong> ผู้ใช้งานยินยอมให้แพลตฟอร์มจัดเก็บ แสดงผล และประมวลผลไฟล์งานเพื่อวัตถุประสงค์ในการตรวจงาน ประเมินผล และการเรียนการสอนภายในระบบเท่านั้น</p>
+
+                <p><strong>7. การคุ้มครองข้อมูลส่วนบุคคล (Privacy)</strong><br>
+                แพลตฟอร์มจะเก็บรวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของผู้ใช้งาน (เช่น ประวัติการส่งงาน เวลาการเข้าใช้งาน คะแนน) ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล โดยจะไม่นำข้อมูลไปเผยแพร่หรือขายให้กับบุคคลภายนอกเพื่อการค้า</p>
+
+                <p><strong>8. ข้อจำกัดความรับผิดชอบ (Limitation of Liability)</strong><br>
+                • <strong>ความเสถียรของระบบ:</strong> แพลตฟอร์มจะพยายามดูแลให้ระบบใช้งานได้ต่อเนื่อง แต่ไม่รับประกันว่าจะไม่มีข้อผิดพลาด หรือเหตุระบบล่มจากเหตุสุดวิสัย (เช่น สัญญาณอินเทอร์เน็ตผู้ใช้ขัดข้อง)<br>
+                • <strong>การสำรองข้อมูล:</strong> แพลตฟอร์มมีระบบสำรองข้อมูลตามรอบเวลา อย่างไรก็ตาม แนะนำให้ผู้ใช้งานสำรองไฟล์งานสำคัญไว้ที่อุปกรณ์ส่วนตัวด้วยเสมอ</p>
+
+                <p><strong>9. การเปลี่ยนแปลงเงื่อนไขการใช้งาน</strong><br>
+                แพลตฟอร์มขอสงวนสิทธิ์ในการแก้ไขปรับปรุงเงื่อนไขการใช้งานนี้ได้ตามความเหมาะสม โดยจะแจ้งให้ผู้ใช้งานทราบผ่านหน้าเว็บไซต์หรือการแจ้งเตือนในระบบเมื่อมีการเปลี่ยนแปลง</p>
+            </div>
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+                <button type="button" onclick="closeModal('termsModal')" class="px-5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold transition-all">
+                    เข้าใจแล้ว / ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: นโยบายความเป็นส่วนตัว -->
+    <div id="privacyModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl border border-slate-100 overflow-hidden">
+            <div class="flex items-center justify-between p-4 sm:p-5 border-b border-slate-200 bg-slate-50">
+                <h3 class="font-bold text-slate-800 text-base sm:text-lg flex items-center gap-2">
+                    <i class="fa-solid fa-user-shield text-blue-900"></i> นโยบายความเป็นส่วนตัว
+                </h3>
+                <button type="button" onclick="closeModal('privacyModal')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-5 sm:p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
+                <h4 class="font-bold text-slate-900 text-center text-sm sm:text-base border-b pb-2">นโยบายความเป็นส่วนตัว (Privacy Policy)<br><span class="text-xs font-normal text-slate-500">สำหรับเว็บไซต์แพลตฟอร์มสั่งงานและส่งงานออนไลน์</span></h4>
+                
+                <p><strong>1. ข้อมูลที่เราทำการเก็บรวบรวม</strong><br>
+                เราเก็บรวบรวมข้อมูลเพื่อการให้บริการ ปรับปรุงระบบ และยืนยันตัวตนผู้ใช้งาน ดังนี้:<br>
+                • <strong>ข้อมูลตัวตนและข้อมูลติดต่อ:</strong> ชื่อ-นามสกุล, อีเมล, รหัสประจำตัว (เช่น รหัสนักศึกษา/พนักงาน), รูปโปรไฟล์, บทบาทผู้ใช้งาน (ผู้สั่งงาน/ผู้ส่งงาน)<br>
+                • <strong>ข้อมูลการใช้งานและไฟล์งาน:</strong> งานที่ถูกสั่ง, ไฟล์งานที่อัปโหลดส่ง (เช่น Documents, Images, Code), วันเวลาที่ส่งงาน, ประวัติการเข้าสู่ระบบ, สถานะการส่งงาน และคะแนน/ข้อเสนอแนะ<br>
+                • <strong>ข้อมูลทางเทคนิค:</strong> หมายเลข IP Address, ข้อมูลอุปกรณ์, ประเภทเบราว์เซอร์ และคุกกี้ (Cookies) ที่จำเป็นต่อการทำงานของระบบ</p>
+
+                <p><strong>2. วัตถุประสงค์ในการเก็บรวบรวมและใช้ข้อมูล</strong><br>
+                เราใช้ข้อมูลของคุณตามวัตถุประสงค์ดังต่อไปนี้:<br>
+                • เพื่อระบุและยืนยันตัวตนในการเข้าใช้ระบบสั่งงานและส่งงาน<br>
+                • เพื่อประมวลผลการส่งงาน จัดเก็บไฟล์งาน และแสดงผลสถานะการส่งงานให้กับผู้สั่งงาน/อาจารย์/หัวหน้างาน<br>
+                • เพื่อการแจ้งเตือนเกี่ยวกับกำหนดส่งงาน (Due date), งานใหม่ หรือข้อเสนอแนะ<br>
+                • เพื่อปรับปรุงประสิทธิภาพการทำงาน ความมั่นคงปลอดภัย และแก้ไขข้อผิดพลาดของแพลตฟอร์ม</p>
+
+                <p><strong>3. การเปิดเผยและการแบ่งปันข้อมูล</strong><br>
+                เราจะไม่ขายหรือแลกเปลี่ยนข้อมูลส่วนบุคคลของคุณให้กับบุคคลภายนอก ยกเว้นในกรณีต่อไปนี้:<br>
+                • <strong>ผู้เกี่ยวข้องในระบบ:</strong> ข้อมูลและไฟล์งานจะถูกเปิดเผยแก่ผู้สั่งงาน (เช่น อาจารย์ ผู้เชี่ยวชาญ หรือหัวหน้างาน) ที่ระบุไว้ในระบบเท่านั้น<br>
+                • <strong>ผู้ให้บริการภายนอก (Third-party Providers):</strong> เช่น ผู้ให้บริการระบบคลาวด์จัดเก็บข้อมูล (Cloud Storage) หรือระบบส่งอีเมลแจ้งเตือน<br>
+                • <strong>ข้อกำหนดทางกฎหมาย:</strong> เมื่อมีคำสั่งศาล หรือต้องปฏิบัติตามกฎหมายที่เกี่ยวข้อง</p>
+
+                <p><strong>4. การจัดเก็บและความปลอดภัยของข้อมูล</strong><br>
+                • เราใช้มาตรการความปลอดภัยทางเทคนิคและการบริหารจัดการที่เหมาะสม เพื่อป้องกันไม่ให้ข้อมูลสูญหาย เข้าถึงโดยไม่ได้รับอนุญาต หรือถูกแก้ไข<br>
+                • ไฟล์งานและข้อมูลส่วนบุคคลจะถูกจัดเก็บตามระยะเวลาที่จำเป็นต่อการใช้งานในระบบ หรือตามที่สถาบัน/องค์กรกำหนดไว้</p>
+
+                <p><strong>5. สิทธิของผู้ใช้งานตามกฎหมาย (PDPA)</strong><br>
+                ผู้ใช้งานมีสิทธิ์ตามกฎหมายคุ้มครองข้อมูลส่วนบุคคล ดังนี้:<br>
+                • สิทธิในการขอเข้าถึง ขอรับสำเนา หรือขอให้โอนย้ายข้อมูลส่วนบุคคลของคุณ<br>
+                • สิทธิในการขอแก้ไขข้อมูลให้ถูกต้องและเป็นปัจจุบัน<br>
+                • สิทธิในการขอให้ลบ หรือระงับการใช้ข้อมูลส่วนบุคคล (กรณีที่ไม่มีความจำเป็นต้องจัดเก็บตามกฎหมาย/พันธะทางการศึกษา)</p>
+
+                <p><strong>6. การติดต่อเรา</strong><br>
+                หากมีข้อสงสัยเกี่ยวกับนโยบายความเป็นส่วนตัวนี้ สามารถติดต่อได้ที่:<br>
+                • <strong>ผู้ดูแลระบบ:</strong> ผู้ดูแลระบบสารสนเทศแพลตฟอร์มส่งงาน<br>
+                • <strong>ช่องทางติดต่อ:</strong> ติดต่อผ่านแผนกเทคโนโลยีสารสนเทศของสถาบัน</p>
+            </div>
+            <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-end">
+                <button type="button" onclick="closeModal('privacyModal')" class="px-5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold transition-all">
+                    เข้าใจแล้ว / ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Handling -->
+    <script>
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbzgkaA8d9v4jHKqN1Sp4K4t_NXzWMR8NqEVYhC2R6doJv0Pg6YNPF8wlAIVi2fLOSvo/exec';
+        
+        const DEFAULT_AVATAR = "photo/profile.png";
+
+        let allSchoolsData = [];
+        let provincesList = [];
+        let vocationsData = {};
+        let levelData = { schNames: [], vetNames: [], gradeSch: [], gradeVet: [] };
+
+        function showLoading(text = "กำลังบันทึกข้อมูล...") {
+            const loaderWrapper = document.getElementById('loaderWrapper');
+            const modalBox = document.getElementById('modalBox');
+            loaderWrapper.classList.remove('success', 'error');
+            modalBox.classList.remove('shake');
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-modal').classList.remove('hidden');
+        }
+
+        function showSuccess(text = "ลงทะเบียนสำเร็จ!") {
+            const loaderWrapper = document.getElementById('loaderWrapper');
+            loaderWrapper.classList.remove('error');
+            loaderWrapper.classList.add('success');
+            document.getElementById('loading-text').innerText = text;
+        }
+
+        function showError(text = "เกิดข้อผิดพลาด!") {
+            const loaderWrapper = document.getElementById('loaderWrapper');
+            const modalBox = document.getElementById('modalBox');
+            loaderWrapper.classList.remove('success');
+            loaderWrapper.classList.add('error');
+            modalBox.classList.remove('shake');
+            void modalBox.offsetWidth;
+            modalBox.classList.add('shake');
+            document.getElementById('loading-text').innerText = text;
+        }
+
+        function hideLoading() {
+            document.getElementById('loading-modal').classList.add('hidden');
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            icon.classList.toggle('fa-eye', !show);
+            icon.classList.toggle('fa-eye-slash', show);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function toggleRoleFields() {
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const studentFieldsGroup = document.getElementById('studentFieldsGroup');
+            const userCodeInput = document.getElementById('userCode');
+            const studentLevelInput = document.getElementById('studentLevel');
+
+            if (role === 'teacher') {
+                studentFieldsGroup.classList.add('hidden');
+                userCodeInput.removeAttribute('required');
+                studentLevelInput.removeAttribute('required');
+                userCodeInput.value = '';
+                studentLevelInput.value = '';
+            } else {
+                studentFieldsGroup.classList.remove('hidden');
+                userCodeInput.setAttribute('required', 'required');
+                studentLevelInput.setAttribute('required', 'required');
+            }
+        }
+
+        // ---------- วัน/เดือน/ปีเกิด (เลือกแยก 3 ช่อง) ----------
+        const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
+                             'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+
+        function initDobSelects() {
+            const daySel = document.getElementById('dobDay');
+            const monthSel = document.getElementById('dobMonth');
+            const yearSel = document.getElementById('dobYear');
+
+            for (let d = 1; d <= 31; d++) {
+                daySel.add(new Option(d, d));
+            }
+            THAI_MONTHS.forEach((m, i) => monthSel.add(new Option(m, i + 1)));
+
+            // ปีล่าสุด = ปีปัจจุบัน - 8 (อายุอย่างน้อย 8 ปี) ย้อนหลังไป 80 ปี
+            const thisYear = new Date().getFullYear();
+            for (let y = thisYear - 8; y >= thisYear - 80; y--) {
+                yearSel.add(new Option(`${y + 543} (ค.ศ. ${y})`, y));
+            }
+        }
+
+        function updateDob() {
+            const daySel = document.getElementById('dobDay');
+            const monthSel = document.getElementById('dobMonth');
+            const yearSel = document.getElementById('dobYear');
+            const dobInput = document.getElementById('dob');
+            const preview = document.getElementById('dobPreview');
+
+            const m = parseInt(monthSel.value, 10);
+            const y = parseInt(yearSel.value, 10);
+
+            // ปรับจำนวนวันตามเดือน/ปี (เช่น ก.พ. 28/29 วัน)
+            if (m) {
+                const maxDay = new Date(y || 2000, m, 0).getDate();
+                Array.from(daySel.options).forEach(opt => {
+                    if (opt.value === '') return;
+                    opt.hidden = opt.disabled = parseInt(opt.value, 10) > maxDay;
+                });
+                if (parseInt(daySel.value, 10) > maxDay) daySel.value = '';
+            }
+
+            const d = parseInt(daySel.value, 10);
+            if (d && m && y) {
+                dobInput.value = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                preview.textContent = `วันเกิดที่เลือก: ${d} ${THAI_MONTHS[m - 1]} พ.ศ. ${y + 543}`;
+                preview.classList.remove('hidden');
+            } else {
+                dobInput.value = '';
+                preview.classList.add('hidden');
+            }
+        }
+
+        function calculateAge(birthDateString) {
+            const today = new Date();
+            const birthDate = new Date(birthDateString);
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+            return age;
+        }
+
+        function toggleDropdown(id) {
+            const drop = document.getElementById(id);
+            const isHidden = drop.classList.contains('hidden');
+            
+            document.getElementById('provinceDropdown').classList.add('hidden');
+            document.getElementById('institutionDropdown').classList.add('hidden');
+            const deptDrop = document.getElementById('departmentDropdown');
+            if (deptDrop) deptDrop.classList.add('hidden');
+
+            if (isHidden) {
+                drop.classList.remove('hidden');
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#provinceBtn') && !e.target.closest('#provinceDropdown')) {
+                document.getElementById('provinceDropdown').classList.add('hidden');
+            }
+            if (!e.target.closest('#institutionBtn') && !e.target.closest('#institutionDropdown')) {
+                document.getElementById('institutionDropdown').classList.add('hidden');
+            }
+            if (!e.target.closest('#departmentBtn') && !e.target.closest('#departmentDropdown')) {
+                const deptDrop = document.getElementById('departmentDropdown');
+                if (deptDrop) deptDrop.classList.add('hidden');
+            }
+        });
+
+        async function fetchSchoolsData() {
+            try {
+                const res = await fetch(`${scriptURL}?action=get_schools`);
+                const data = await res.json();
+                if (data.status === 'success' && data.schools) {
+                    allSchoolsData = data.schools;
+                    provincesList = [...new Set(allSchoolsData.map(item => (item.province || '').trim()))].filter(Boolean);
+                    renderProvinces(provincesList);
+                }
+            } catch (err) {
+                console.error("Fetch Schools Error:", err);
+            }
+        }
+
+        async function fetchLevelData() {
+            try {
+                const res = await fetch(`${scriptURL}?action=get_level_options`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    levelData = {
+                        schNames: data.schNames || [],
+                        vetNames: data.vetNames || [],
+                        gradeSch: data.gradeSch || [],
+                        gradeVet: data.gradeVet || []
+                    };
+                    const inst = document.getElementById('institution').value;
+                    if (inst) updateLevelOptions(inst);
+                }
+            } catch (err) {
+                console.error("Fetch Level Options Error:", err);
+            }
+        }
+
+        function resetLevelField() {
+            const sel = document.getElementById('studentLevel');
+            sel.innerHTML = '<option value="">กรุณาเลือกสถาบันก่อน...</option>';
+            sel.value = '';
+            sel.disabled = true;
+        }
+
+        // เลือกสถาบันแล้ว -> ดูว่าชื่ออยู่ใน Sch (คอลัมน์ N) หรือ Vet (คอลัมน์ O)
+        // Sch -> แสดงระดับชั้นจาก GradeSch (คอลัมน์ L) | Vet -> แสดงจาก GradeVet (คอลัมน์ M)
+        function updateLevelOptions(instName) {
+            const sel = document.getElementById('studentLevel');
+            const key = String(instName || '').trim().toLowerCase();
+            const inList = arr => arr.some(n => String(n || '').trim().toLowerCase() === key);
+
+            let options = [];
+            if (inList(levelData.schNames)) {
+                options = levelData.gradeSch;
+            } else if (inList(levelData.vetNames)) {
+                options = levelData.gradeVet;
+            } else {
+                // ไม่พบชื่อสถาบันใน Sch/Vet -> แสดงระดับชั้นทั้งหมดให้เลือกแทน
+                options = [...levelData.gradeSch, ...levelData.gradeVet];
+            }
+
+            const prev = sel.value;
+            sel.innerHTML = '<option value="">-- เลือกระดับชั้น --</option>';
+            options.forEach(lv => {
+                const opt = document.createElement('option');
+                opt.value = lv;
+                opt.textContent = lv;
+                sel.appendChild(opt);
+            });
+            sel.disabled = false;
+            if (prev && options.includes(prev)) sel.value = prev;
+        }
+
+        async function fetchVocationsData() {
+            try {
+                const res = await fetch(`${scriptURL}?action=get_vocations`);
+                const data = await res.json();
+                if (data.status === 'success' && data.vocations) {
+                    vocationsData = data.vocations;
+                }
+            } catch (err) {
+                console.error("Fetch Vocations Error:", err);
+            }
+        }
+
+        function renderProvinces(list) {
+            const container = document.getElementById('provinceList');
+            container.innerHTML = '';
+            if (list.length === 0) {
+                container.innerHTML = `<div class="p-3 text-slate-400 text-center">ไม่พบจังหวัด</div>`;
+                return;
+            }
+            list.forEach(prov => {
+                const item = document.createElement('div');
+                item.className = 'p-2.5 hover:bg-blue-50 cursor-pointer rounded-lg transition-colors';
+                item.innerText = prov;
+                item.onclick = () => selectProvince(prov);
+                container.appendChild(item);
+            });
+        }
+
+        function filterProvinces() {
+            const q = document.getElementById('provinceSearch').value.trim().toLowerCase();
+            const filtered = provincesList.filter(p => p.toLowerCase().includes(q));
+            renderProvinces(filtered);
+        }
+
+        function selectProvince(prov) {
+            document.getElementById('province').value = prov;
+            document.getElementById('provinceLabel').innerText = prov;
+            document.getElementById('provinceLabel').classList.remove('text-slate-400');
+            document.getElementById('provinceLabel').classList.add('text-slate-800', 'font-medium');
+            document.getElementById('provinceDropdown').classList.add('hidden');
+
+            document.getElementById('institution').value = '';
+            document.getElementById('institutionLabel').innerText = 'เลือก หรือ พิมพ์ค้นหาสถาบัน...';
+            document.getElementById('institutionLabel').classList.add('text-slate-400');
+            document.getElementById('institutionLabel').classList.remove('text-slate-800', 'font-medium');
+
+            resetDepartmentField();
+            resetLevelField();
+
+            const filteredSchools = allSchoolsData
+                .filter(s => (s.province || '').trim().toLowerCase() === prov.trim().toLowerCase())
+                .map(s => s.schoolName);
+            renderInstitutions(filteredSchools);
+        }
+
+        function renderInstitutions(list) {
+            const container = document.getElementById('institutionList');
+            container.innerHTML = '';
+            if (list.length === 0) {
+                container.innerHTML = `<div class="p-3 text-slate-400 text-center">ไม่พบสถาบันในจังหวัดนี้</div>`;
+                return;
+            }
+            list.forEach(sch => {
+                const item = document.createElement('div');
+                item.className = 'p-2.5 hover:bg-blue-50 cursor-pointer rounded-lg transition-colors';
+                item.innerText = sch;
+                item.onclick = () => selectInstitution(sch);
+                container.appendChild(item);
+            });
+        }
+
+        function filterInstitutions() {
+            const selectedProv = document.getElementById('province').value;
+            const q = document.getElementById('institutionSearch').value.trim().toLowerCase();
+            const filtered = allSchoolsData
+                .filter(s => (s.province || '').trim().toLowerCase() === selectedProv.trim().toLowerCase() && (s.schoolName || '').toLowerCase().includes(q))
+                .map(s => s.schoolName);
+            renderInstitutions(filtered);
+        }
+
+        function selectInstitution(sch) {
+            document.getElementById('institution').value = sch;
+            document.getElementById('institutionLabel').innerText = sch;
+            document.getElementById('institutionLabel').classList.remove('text-slate-400');
+            document.getElementById('institutionLabel').classList.add('text-slate-800', 'font-medium');
+            document.getElementById('institutionDropdown').classList.add('hidden');
+
+            checkAndToggleDepartment(sch);
+            updateLevelOptions(sch);
+        }
+
+        function resetDepartmentField() {
+            const deptGroup = document.getElementById('departmentFieldGroup');
+            const deptInput = document.getElementById('department');
+            deptGroup.classList.add('hidden');
+            deptInput.value = '';
+            deptInput.removeAttribute('required');
+            document.getElementById('departmentLabel').innerText = 'เลือก หรือ พิมพ์ค้นหาแผนกสาขา...';
+            document.getElementById('departmentLabel').classList.add('text-slate-400');
+            document.getElementById('departmentLabel').classList.remove('text-slate-800', 'font-medium');
+        }
+
+        function checkAndToggleDepartment(sch) {
+            const deptGroup = document.getElementById('departmentFieldGroup');
+            const deptInput = document.getElementById('department');
+
+            let matchedKey = Object.keys(vocationsData).find(key => key.trim().toLowerCase() === sch.trim().toLowerCase());
+
+            if (matchedKey && vocationsData[matchedKey] && vocationsData[matchedKey].length > 0) {
+                deptGroup.classList.remove('hidden');
+                deptInput.setAttribute('required', 'required');
+                renderDepartments(vocationsData[matchedKey]);
+            } else {
+                resetDepartmentField();
+            }
+        }
+
+        function renderDepartments(list) {
+            const container = document.getElementById('departmentList');
+            container.innerHTML = '';
+            if (!list || list.length === 0) {
+                container.innerHTML = `<div class="p-3 text-slate-400 text-center">ไม่พบแผนกสาขาวิชา</div>`;
+                return;
+            }
+            list.forEach(dept => {
+                const item = document.createElement('div');
+                item.className = 'p-2.5 hover:bg-blue-50 cursor-pointer rounded-lg transition-colors';
+                item.innerText = dept;
+                item.onclick = () => selectDepartment(dept);
+                container.appendChild(item);
+            });
+        }
+
+        function filterDepartments() {
+            const sch = document.getElementById('institution').value;
+            let matchedKey = Object.keys(vocationsData).find(key => key.trim().toLowerCase() === sch.trim().toLowerCase());
+            if (!matchedKey || !vocationsData[matchedKey]) return;
+
+            const q = document.getElementById('departmentSearch').value.trim().toLowerCase();
+            const filtered = vocationsData[matchedKey].filter(d => d.toLowerCase().includes(q));
+            renderDepartments(filtered);
+        }
+
+        function selectDepartment(dept) {
+            document.getElementById('department').value = dept;
+            document.getElementById('departmentLabel').innerText = dept;
+            document.getElementById('departmentLabel').classList.remove('text-slate-400');
+            document.getElementById('departmentLabel').classList.add('text-slate-800', 'font-medium');
+            document.getElementById('departmentDropdown').classList.add('hidden');
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+
+            const province = document.getElementById('province').value.trim();
+            const institution = document.getElementById('institution').value.trim();
+            const department = document.getElementById('department').value.trim();
+
+            if (!province) {
+                alert('กรุณาเลือกจังหวัด');
+                return;
+            }
+            if (!institution) {
+                alert('กรุณาเลือกสถาบัน / สถานศึกษา');
+                return;
+            }
+
+            const deptGroup = document.getElementById('departmentFieldGroup');
+            if (!deptGroup.classList.contains('hidden') && !department) {
+                alert('กรุณาเลือกแผนกสาขาวิชา');
+                return;
+            }
+
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (password !== confirmPassword) {
+                alert('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน กรุณาตรวจสอบอีกครั้ง');
+                return;
+            }
+
+            const role = document.querySelector('input[name="role"]:checked').value;
+            const dob = document.getElementById('dob').value;
+
+            if (dob) {
+                const age = calculateAge(dob);
+                if (role === 'teacher' && age < 20) {
+                    alert(`ขออภัย ผู้สมัครบทบาท "อาจารย์ / ครูผู้สอน" ต้องมีอายุอย่างน้อย 20 ปีขึ้นไป (ปัจจุบันคุณอายุ ${age} ปี)`);
+                    return;
+                }
+            }
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึกข้อมูลลงระบบ...';
+
+            showLoading("กำลังบันทึกข้อมูล...");
+
+            const firstname = document.getElementById('firstname').value.trim();
+            const lastname = document.getElementById('lastname').value.trim();
+            const userCode = document.getElementById('userCode').value.trim() || '-';
+            const studentLevel = document.getElementById('studentLevel').value.trim() || '-';
+            const email = document.getElementById('email').value.trim();
+
+            const payload = {
+                action: 'register',
+                role: role,
+                firstname: firstname,
+                lastname: lastname,
+                dob: dob,
+                province: province,
+                institution: institution,
+                department: department,
+                userCode: userCode,
+                studentLevel: studentLevel,
+                email: email,
+                password: password,
+                avatar: DEFAULT_AVATAR
+            };
+
+            try {
+                const response = await fetch(scriptURL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    sessionStorage.clear();
+                    localStorage.removeItem('savedTeacherProfile');
+                    localStorage.removeItem('savedUserProfile');
+
+                    if (role === 'teacher') {
+                        const teacherData = {
+                            fullName: `${firstname} ${lastname}`,
+                            email: email,
+                            province: province,
+                            institution: institution,
+                            avatar: DEFAULT_AVATAR,
+                            authToken: result.authToken || ''
+                        };
+                        sessionStorage.setItem('loggedInTeacher', JSON.stringify(teacherData));
+                        localStorage.setItem('savedTeacherProfile', JSON.stringify(teacherData));
+                    } else {
+                        const studentData = {
+                            fullName: `${firstname} ${lastname}`,
+                            no: userCode,
+                            className: studentLevel,
+                            province: province,
+                            institution: institution,
+                            department: department,
+                            email: email,
+                            avatar: DEFAULT_AVATAR,
+                            authToken: result.authToken || ''
+                        };
+                        sessionStorage.setItem('loggedInUser', JSON.stringify(studentData));
+                        localStorage.setItem('savedUserProfile', JSON.stringify(studentData));
+                    }
+
+                    localStorage.setItem('autoOpenSidebar', 'true');
+
+                    showSuccess("ลงทะเบียนสำเร็จ!");
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1200);
+
+                } else {
+                    showError("ลงทะเบียนไม่สำเร็จ!");
+                    setTimeout(() => {
+                        hideLoading();
+                        alert('เกิดข้อผิดพลาด: ' + (result.message || 'ไม่สามารถลงทะเบียนได้'));
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> ยืนยันการลงทะเบียน';
+                    }, 1200);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError("เชื่อมต่อระบบล้มเหลว!");
+                setTimeout(() => {
+                    hideLoading();
+                    alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล กรุณาลองใหม่อีกครั้ง');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> ยืนยันการลงทะเบียน';
+                }, 1200);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDobSelects();
+            toggleRoleFields();
+            fetchSchoolsData();
+            fetchVocationsData();
+            fetchLevelData();
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,2704 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบสำหรับนักเรียน</title>
+    <!-- Favicon Icon -->
+    <link rel="icon" type="image/png" href="photo/icon1.png">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google API Client Libraries สำหรับ Google Picker -->
+    <script>
+/* [ความปลอดภัย] แนบ authTokens ไปกับทุกคำขอที่ส่งไป Apps Script โดยอัตโนมัติ (ไม่กระทบการทำงานเดิม) */
+(function () {
+  if (window.__authFetchPatched) return; window.__authFetchPatched = true;
+  var _fetch = window.fetch;
+  function tokens() {
+    var out = [], srcs = [[sessionStorage, 'loggedInTeacher'], [sessionStorage, 'loggedInUser'], [localStorage, 'savedTeacherProfile'], [localStorage, 'savedUserProfile']];
+    for (var i = 0; i < srcs.length; i++) {
+      try {
+        var raw = srcs[i][0].getItem(srcs[i][1]);
+        if (!raw) continue;
+        var o = JSON.parse(raw), t = o && (o.authToken || o.adminToken);
+        if (t && out.indexOf(String(t)) === -1) out.push(String(t));
+      } catch (e) {}
+    }
+    return out;
+  }
+  window.fetch = function (input, init) {
+    try {
+      var url = typeof input === 'string' ? input : ((input && input.url) || '');
+      if (url.indexOf('script.google.com/macros/') !== -1) {
+        var tk = tokens();
+        if (tk.length) {
+          var method = String((init && init.method) || 'GET').toUpperCase();
+          if (method === 'POST' && init && typeof init.body === 'string' && init.body.charAt(0) === '{' && init.body.indexOf('"authTokens"') === -1) {
+            var rest = init.body.slice(1);
+            init = Object.assign({}, init, { body: '{"authTokens":' + JSON.stringify(tk) + (rest.replace(/^\s+/, '').charAt(0) === '}' ? '' : ',') + rest });
+          } else if (method === 'GET' && typeof input === 'string' && url.indexOf('authTokens=') === -1) {
+            input = input + (input.indexOf('?') === -1 ? '?' : '&') + 'authTokens=' + encodeURIComponent(tk.join(','));
+          }
+        }
+      }
+    } catch (e) {}
+    return _fetch.call(this, input, init);
+  };
+})();
+</script>
+<script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <style>
+        html { font-family: 'Sarabun', sans-serif; }
+        * { box-sizing: border-box; font-family: inherit; margin: 0; padding: 0; }
+        body { background-color: #0d1b2a; color: #e0e6ed; padding: 20px; min-height: 100vh; }
+        
+        /* Clean iPhone/iOS Style Activity Indicator Spinner */
+        .ios-spinner {
+            position: relative;
+            width: 38px;
+            height: 38px;
+            display: inline-block;
+        }
+        .ios-spinner div {
+            position: absolute;
+            left: 46%;
+            top: 20%;
+            width: 8%;
+            height: 26%;
+            background: #ffffff;
+            border-radius: 50px;
+            opacity: 0.15;
+            animation: ios-spinner-fade 1s linear infinite;
+        }
+        .ios-spinner div:nth-child(1)  { transform: rotate(0deg) translate(0, -130%); animation-delay: 0s; }
+        .ios-spinner div:nth-child(2)  { transform: rotate(30deg) translate(0, -130%); animation-delay: -0.9167s; }
+        .ios-spinner div:nth-child(3)  { transform: rotate(60deg) translate(0, -130%); animation-delay: -0.8333s; }
+        .ios-spinner div:nth-child(4)  { transform: rotate(90deg) translate(0, -130%); animation-delay: -0.75s; }
+        .ios-spinner div:nth-child(5)  { transform: rotate(120deg) translate(0, -130%); animation-delay: -0.6667s; }
+        .ios-spinner div:nth-child(6)  { transform: rotate(150deg) translate(0, -130%); animation-delay: -0.5833s; }
+        .ios-spinner div:nth-child(7)  { transform: rotate(180deg) translate(0, -130%); animation-delay: -0.5s; }
+        .ios-spinner div:nth-child(8)  { transform: rotate(210deg) translate(0, -130%); animation-delay: -0.4167s; }
+        .ios-spinner div:nth-child(9)  { transform: rotate(240deg) translate(0, -130%); animation-delay: -0.3333s; }
+        .ios-spinner div:nth-child(10) { transform: rotate(270deg) translate(0, -130%); animation-delay: -0.25s; }
+        .ios-spinner div:nth-child(11) { transform: rotate(300deg) translate(0, -130%); animation-delay: -0.1667s; }
+        .ios-spinner div:nth-child(12) { transform: rotate(330deg) translate(0, -130%); animation-delay: -0.0833s; }
+
+        @keyframes ios-spinner-fade {
+            0% { opacity: 1; }
+            100% { opacity: 0.15; }
+        }
+
+        /* Fullscreen Overlay Style */
+        .loading-overlay-ios {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 11, 26, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        .loading-box-ios {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 24px;
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            min-width: 160px;
+            gap: 12px;
+        }
+        .loading-box-ios span {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .navbar { 
+            background: linear-gradient(135deg, #0f2b48 0%, #1a365d 100%); 
+            padding: 16px 24px; 
+            color: white; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3); 
+            margin-bottom: 25px; 
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .navbar h1 { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 12px; color: #ffffff; }
+        .user-info { display: flex; align-items: center; gap: 20px; font-size: 14px; background: rgba(255,255,255,0.05); padding: 8px 16px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); }
+        .user-info span { color: #ff9f43; font-weight: 600; }
+
+        .btn-home { 
+            background: rgba(255, 255, 255, 0.1); 
+            color: #ffffff; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            padding: 8px 18px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: all 0.3s ease; 
+            text-decoration: none; 
+            display: inline-block; 
+            font-size: 14px;
+        }
+        .btn-home:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+
+        .btn-sidebar-toggle { 
+            background: #ff9f43; 
+            color: #0f2b48; 
+            border: none; 
+            padding: 8px 14px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 700; 
+            font-size: 15px; 
+            transition: all 0.2s ease; 
+        }
+        .btn-sidebar-toggle:hover { background: #f39c12; transform: scale(1.03); }
+
+        .main-container { 
+            background: #112233; 
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); 
+            min-height: 450px; 
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .main-container h2 { font-size: 22px; color: #ffffff; font-weight: 700; border-left: 4px solid #ff9f43; padding-left: 12px; }
+
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 22px; margin-top: 25px; }
+        
+        .task-card { 
+            background: #1b2e4b; 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 14px; 
+            overflow: hidden; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25); 
+            display: flex; 
+            flex-direction: column; 
+            transition: all 0.3s ease;
+        }
+        .task-card:hover { transform: translateY(-5px); border-color: rgba(255, 159, 67, 0.4); box-shadow: 0 12px 25px rgba(0,0,0,0.4); }
+        .card-img { width: 100%; height: 160px; object-fit: cover; background: #0f2b48; }
+        .card-body { padding: 18px; flex-grow: 1; display: flex; flex-direction: column; }
+        .card-subject { font-size: 12px; color: #ff9f43; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .card-title { font-size: 18px; font-weight: 700; color: #ffffff; margin-bottom: 8px; line-height: 1.4; }
+        .card-desc { font-size: 14px; color: #a0aec0; margin-bottom: 16px; line-height: 1.6; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
+        
+        .btn-view { 
+            background: linear-gradient(135deg, #ff9f43 0%, #e67e22 100%); 
+            color: #0f2b48; 
+            border: none; 
+            padding: 12px; 
+            border-radius: 8px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            width: 100%; 
+            text-align: center; 
+            font-size: 14px; 
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+        }
+        .btn-view:hover { background: linear-gradient(135deg, #f39c12 0%, #d35400 100%); color: #fff; transform: translateY(-1px); }
+
+        /* Style สำหรับ Slide Drawer เมนูด้านข้าง */
+        .sidebar-drawer { position: fixed; top: 0; left: -330px; width: 310px; height: 100%; background: #0f2b48; box-shadow: 8px 0 25px rgba(0,0,0,0.5); transition: left 0.3s ease; z-index: 3000; padding: 25px; display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-drawer.open { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 20px; }
+        .sidebar-header h3 { font-size: 18px; color: #ffffff; font-weight: 700; }
+        .btn-close-sidebar { background: none; border: none; font-size: 22px; cursor: pointer; color: #a0aec0; font-weight: bold; transition: 0.2s; }
+        .btn-close-sidebar:hover { color: #ff4d4d; }
+
+        .sidebar-content { flex-grow: 1; }
+        .btn-gdrive-link { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; background: rgba(255, 255, 255, 0.08); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: 0.3s; text-decoration: none; }
+        .btn-gdrive-link:hover { background: #ff9f43; color: #0f2b48; border-color: #ff9f43; transform: translateY(-2px); }
+
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 2999; display: none; }
+        .sidebar-overlay.show { display: block; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 2000; padding: 20px; }
+        .modal-box { background: #172a45; padding: 25px; border-radius: 16px; max-width: 600px; width: 100%; box-shadow: 0 15px 35px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); color: #e0e6ed; }
+        
+        /* สไตล์โพสต์ Social Media ภายใน Modal นักเรียน */
+        .social-post-preview { background: #1b2e4b; border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 16px; color: #fff; margin-bottom: 20px; }
+        .social-post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .social-avatar { width: 38px; height: 38px; background: #ff9f43; border-radius: 50%; object-fit: cover; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #0f2b48; font-size: 14px; border: 1px solid rgba(255,255,255,0.2); flex-shrink: 0; }
+        .social-author-info { font-size: 13px; font-weight: bold; color: #fff; }
+        .social-time { font-size: 11px; color: #a0aec0; }
+        .social-text { font-size: 14px; line-height: 1.5; color: #e0e6ed; margin-bottom: 12px; word-break: break-word; white-space: pre-line; }
+        
+
+        /* ===== IG-style gallery (carousel) ===== */
+        .ig-carousel-wrap { position: relative; margin-bottom: 12px; border-radius: 12px; overflow: hidden; background: #0b1f36; }
+        .ig-carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .ig-carousel::-webkit-scrollbar { display: none; }
+        .ig-slide { flex: 0 0 100%; width: 100%; aspect-ratio: 1 / 1; object-fit: contain; scroll-snap-align: center; background: #0b1f36; cursor: zoom-in; display: block; }
+        .ig-nav { position: absolute; top: calc(50% - 20px); transform: translateY(-50%); width: 38px; height: 38px; border: none; border-radius: 50%; background: rgba(0,0,0,0.55); color: #fff; font-size: 20px; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; transition: background .2s, opacity .2s; padding: 0; }
+        .ig-nav:hover { background: rgba(255,159,67,0.95); color: #0f2b48; }
+        .ig-nav.prev { left: 8px; }
+        .ig-nav.next { right: 8px; }
+        .ig-nav.hidden-nav { opacity: 0; pointer-events: none; }
+        .ig-count { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.6); color: #fff; font-size: 12px; font-weight: bold; padding: 3px 10px; border-radius: 999px; pointer-events: none; }
+        .ig-dots { display: flex; justify-content: center; gap: 5px; padding: 8px 0 6px; background: #0b1f36; }
+        .ig-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.3); transition: all .2s; }
+        .ig-dot.active { background: #ff9f43; transform: scale(1.3); }
+        .ig-empty { font-size: 11px; color: #a0aec0; margin-bottom: 12px; }
+        .ig-lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 99999; display: flex; align-items: center; justify-content: center; cursor: zoom-out; }
+        .ig-lightbox img { max-width: 96vw; max-height: 92vh; object-fit: contain; border-radius: 8px; }
+
+        .social-gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-bottom: 12px; border-radius: 10px; overflow: hidden; }
+        .social-gallery-img { width: 100%; height: 130px; object-fit: cover; background: #0f2b48; border-radius: 6px; }
+
+        .card-link-box { margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .card-link { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #ff9f43; background: rgba(255, 159, 67, 0.1); border: 1px solid rgba(255, 159, 67, 0.25); padding: 8px 12px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: all 0.2s ease; }
+        .card-link:hover { background: rgba(255, 159, 67, 0.2); color: #fff; transform: translateY(-1px); }
+        .card-no-link { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #ef4444; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); padding: 8px 12px; border-radius: 8px; font-weight: 600; }
+
+        /* Submit Area */
+        .submit-section { background: rgba(255,255,255,0.03); padding: 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 15px; }
+        .submit-section label { display: block; font-weight: 700; font-size: 14px; color: #ffffff; margin-bottom: 10px; }
+
+        .submit-input-group { margin-bottom: 12px; }
+        
+        .btn-drive-picker { background: #2b4c7e; color: white; border: 1px solid rgba(255,255,255,0.1); width: 100%; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-drive-picker:hover { background: #3b629b; }
+
+        .btn-submit-work { background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 15px; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3); }
+        .btn-submit-work:hover { background: #27ae60; transform: translateY(-1px); }
+
+        /* ส่งงานเป็นรูปภาพ */
+        .submit-divider { text-align: center; font-size: 12px; color: #a0aec0; margin: 4px 0 12px; display: flex; align-items: center; gap: 10px; }
+        .submit-divider::before, .submit-divider::after { content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.12); }
+        .submit-section label.btn-image-pick { display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255,159,67,0.12); color: #ff9f43; border: 1px dashed rgba(255,159,67,0.6); padding: 12px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+        .submit-section label.btn-image-pick:hover { background: rgba(255,159,67,0.25); color: #fff; }
+        .work-image-preview-box { position: relative; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px; margin-bottom: 10px; text-align: center; }
+        .work-image-preview-box img { max-width: 100%; max-height: 220px; border-radius: 8px; object-fit: contain; background: #0f2b48; }
+        .work-image-info { font-size: 12px; color: #a0aec0; margin-top: 8px; }
+        .btn-remove-work-image { position: absolute; top: 8px; right: 8px; background: rgba(239,68,68,0.9); color: #fff; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 700; font-size: 14px; line-height: 1; }
+        .btn-remove-work-image:hover { background: #ef4444; }
+
+        /* ===== ส่งงาน 3 รูปแบบ (แท็บ) ===== */
+        .submit-title { font-weight: 700; font-size: 15px; color: #ffffff; margin-bottom: 12px; }
+        .submit-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+        .submit-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 6px; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.12); border-radius: 12px; color: #cbd5e0; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+        .submit-tab .tab-ico { font-size: 22px; line-height: 1.2; }
+        .submit-tab .tab-name { font-size: 13px; font-weight: 700; color: #ffffff; }
+        .submit-tab .tab-hint { font-size: 10.5px; color: #a0aec0; }
+        .submit-tab:hover { background: rgba(255,255,255,0.1); transform: translateY(-1px); }
+        .submit-tab.active { background: rgba(255,159,67,0.15); border-color: #ff9f43; box-shadow: 0 0 0 3px rgba(255,159,67,0.15); }
+        .submit-tab.active .tab-hint { color: #ff9f43; }
+        .submit-panel { animation: panelIn 0.25s ease; margin-bottom: 14px; }
+        @keyframes panelIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .submit-section label.dropzone { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 22px 12px; margin-bottom: 10px; border: 2px dashed rgba(255,159,67,0.55); background: rgba(255,159,67,0.08); border-radius: 12px; cursor: pointer; text-align: center; transition: all 0.2s ease; color: #ff9f43; font-weight: 700; font-size: 14px; }
+        .submit-section label.dropzone:hover, .submit-section label.dropzone.dragover { background: rgba(255,159,67,0.2); border-color: #ff9f43; color: #ffffff; }
+        .dropzone .dz-ico { font-size: 32px; line-height: 1.2; }
+        .dropzone .dz-sub { font-size: 12px; font-weight: 400; color: #a0aec0; }
+        .work-doc-chip { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+        .work-doc-chip .doc-ico { font-size: 28px; flex-shrink: 0; }
+        .work-doc-chip .doc-meta { flex: 1; min-width: 0; text-align: left; }
+        .work-doc-chip .doc-name { font-size: 13px; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .work-doc-chip .doc-size { font-size: 12px; color: #a0aec0; margin-top: 2px; }
+        .work-doc-chip .doc-remove { background: rgba(239,68,68,0.9); color: #fff; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-weight: 700; flex-shrink: 0; }
+        .work-doc-chip .doc-remove:hover { background: #ef4444; }
+        .submit-note { font-size: 11.5px; color: #a0aec0; line-height: 1.6; }
+        .link-help { background: rgba(255,255,255,0.04); border-left: 3px solid #ff9f43; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #cbd5e0; line-height: 1.7; margin-top: 10px; }
+        @media (max-width: 420px) { .submit-tab .tab-hint { display: none; } }
+
+        .btn-close { display: block; width: 100%; padding: 12px; background: rgba(255,255,255,0.1); color: #cbd5e0; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 15px; transition: 0.2s; }
+        .btn-close:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+        /* ===== สถานะรับงาน / เวลาปิดรับงาน ===== */
+        .closed-badge { display: inline-block; font-size: 12px; font-weight: 700; color: #ef4444; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4); padding: 5px 10px; border-radius: 999px; margin-bottom: 10px; }
+        .deadline-badge { display: inline-block; font-size: 12px; font-weight: 700; color: #ff9f43; background: rgba(255,159,67,0.12); border: 1px solid rgba(255,159,67,0.4); padding: 5px 10px; border-radius: 999px; margin-bottom: 10px; }
+        .closed-banner { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.5); color: #fca5a5; padding: 16px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: 700; font-size: 14px; line-height: 1.6; }
+        .deadline-note { background: rgba(255,159,67,0.1); border: 1px dashed rgba(255,159,67,0.5); color: #ff9f43; padding: 10px 14px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: 700; font-size: 13px; line-height: 1.6; }
+
+        .hidden { display: none !important; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .popup { background: #172a45; padding: 30px; border-radius: 16px; text-align: center; max-width: 360px; width: 90%; border: 1px solid rgba(255,255,255,0.1); }
+        .popup h3 { color: #ff4d4d; margin-bottom: 15px; font-size: 22px; font-weight: 700; }
+        .popup p { color: #cbd5e0; }
+        .popup button { background: #ff4d4d; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: 700; margin-top: 18px; transition: 0.2s; }
+        .popup button:hover { background: #e03838; }
+
+        /* สไตล์ Modal ระบุข้อมูลห้องและเลขที่ (Studata Step) */
+        .studata-box { background: #172a45; border: 1px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 25px; max-width: 440px; width: 90%; color: #fff; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+        .studata-info { background: rgba(255,255,255,0.05); border-left: 4px solid #ff9f43; padding: 12px 15px; border-radius: 8px; margin: 15px 0; font-size: 14px; line-height: 1.6; text-align: left; }
+        .studata-field { margin-bottom: 14px; text-align: left; }
+        .studata-field label { display: block; font-size: 13px; color: #a0aec0; margin-bottom: 6px; font-weight: 600; }
+        .studata-field input { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 15px; outline: none; }
+        .studata-field input:focus { border-color: #ff9f43; }
+        .studata-field select { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; font-size: 15px; outline: none; font-family: inherit; cursor: pointer; }
+        .studata-field select:focus { border-color: #ff9f43; }
+        .studata-field select option { background: #172a45; color: #fff; }
+        .btn-save-studata { width: 100%; padding: 13px; background: linear-gradient(135deg, #ff9f43 0%, #e67e22 100%); color: #0f2b48; border: none; border-radius: 8px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3); }
+        .btn-edit-studata { display: flex; align-items: center; gap: 10px; width: 100%; margin-top: 12px; padding: 14px 16px; background: rgba(255,159,67,0.12); border: 1px solid rgba(255,159,67,0.4); border-radius: 12px; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; transition: 0.2s; }
+        .btn-edit-studata:hover { background: rgba(255,159,67,0.25); }
+        .btn-cancel-studata { width: 100%; margin-top: 10px; padding: 12px; background: transparent; color: #cbd5e0; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; }
+        .btn-cancel-studata:hover { background: rgba(255,255,255,0.08); }
+        .btn-save-studata:hover { background: linear-gradient(135deg, #f39c12 0%, #d35400 100%); color: #fff; }
+        /* ลดงานเรนเดอร์ของการ์ดที่อยู่นอกจอ */
+        .task-card { content-visibility: auto; contain-intrinsic-size: auto 420px; }
+        /* ================= THEME SYSTEM (ร้านธีมจาก Admin) ================= */
+        :root {
+            --bg:#0d1b2a; --surface:#112233; --panel:rgba(0,0,0,0.2); --panel2:rgba(0,0,0,0.3);
+            --nav1:#0f2b48; --nav2:#1a365d; --card1:#1b2e4b; --card2:#15243b; --card3:#25406a;
+            --sidebar:#0f2b48; --modal:#172a45;
+            --accent:#ff9f43; --accent2:#e67e22; --accent-rgb:255,159,67; --on-accent:#0f2b48; --on-nav:#ffffff;
+            --text:#e0e6ed; --strong:#ffffff; --muted:#a0aec0;
+            --line:rgba(255,255,255,0.12); --input-bg:rgba(0,0,0,0.3);
+        }
+        body { background-color: var(--bg); color: var(--text); transition: background-color .35s ease, color .35s ease; }
+        .navbar { background: linear-gradient(135deg, var(--nav1) 0%, var(--nav2) 100%); }
+        .user-info span, .card-subject, .card-link, .submit-tab.active .tab-hint, .submit-section label.btn-image-pick { color: var(--accent); }
+        .btn-sidebar-toggle { background: var(--accent); color: var(--on-accent); }
+        .btn-sidebar-toggle:hover { background: var(--accent); filter: brightness(1.1); }
+        .main-container { background: var(--surface); border-color: var(--line); }
+        .main-container h2 { color: var(--strong); border-left-color: var(--accent); }
+        .task-card { background: var(--card1); border-color: var(--line); }
+        .task-card:hover { border-color: rgba(var(--accent-rgb),0.6); }
+        .card-img { background: var(--card2); }
+        .card-title, .social-author-info, .submit-title, .submit-section label, .submit-tab .tab-name, .work-doc-chip .doc-name { color: var(--strong); }
+        .card-desc, .social-time, .submit-note, .submit-divider, .work-image-info, .work-doc-chip .doc-size, .dropzone .dz-sub, .submit-tab .tab-hint, .studata-field label, .ig-empty { color: var(--muted); }
+        .social-text, .link-help { color: var(--text); }
+        .btn-view, .btn-save-studata { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color: var(--on-accent); }
+        .btn-view:hover, .btn-save-studata:hover { background: var(--accent2); color: var(--on-accent); filter: brightness(1.08); }
+        .card-link { background: rgba(var(--accent-rgb),0.12); border-color: rgba(var(--accent-rgb),0.3); }
+        .sidebar-drawer { background: var(--sidebar); }
+        .sidebar-header h3 { color: var(--on-nav); }
+        .btn-gdrive-link:hover { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+        .modal-box, .popup, .studata-box { background: var(--modal); color: var(--text); border-color: var(--line); }
+        .social-post-preview { background: var(--card1); color: var(--strong); border-color: var(--line); }
+        .social-avatar { background: var(--accent); color: var(--on-accent); }
+        .submit-section, .link-help, .work-image-preview-box, .work-doc-chip { background: var(--panel); border-color: var(--line); }
+        .submit-tab { background: var(--panel2); border-color: var(--line); color: var(--text); }
+        .submit-tab.active { background: rgba(var(--accent-rgb),0.15); border-color: var(--accent); }
+        .submit-section label.dropzone, .submit-section label.btn-image-pick { border-color: rgba(var(--accent-rgb),0.55); background: rgba(var(--accent-rgb),0.08); color: var(--accent); }
+        .link-help, .studata-info { border-left-color: var(--accent); }
+        .studata-field input, .studata-field select { background: var(--input-bg); color: var(--strong); border-color: var(--line); }
+        .studata-field input:focus, .studata-field select:focus { border-color: var(--accent); }
+        .studata-field select option { background: var(--modal); color: var(--strong); }
+        .btn-edit-studata { background: rgba(var(--accent-rgb),0.12); border-color: rgba(var(--accent-rgb),0.4); color: var(--on-nav); }
+        .btn-edit-studata:hover { background: rgba(var(--accent-rgb),0.25); }
+        .btn-cancel-studata, .btn-close { color: var(--text); border-color: var(--line); }
+        .studata-info { background: var(--panel); }
+
+        /* ===== Theme menu in sidebar ===== */
+        .btn-theme-menu { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; margin-top: 12px; background: rgba(255,255,255,0.08); color: #ffffff; border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.3s; }
+                .btn-theme-menu:hover { background: rgba(255,255,255,0.16); transform: translateY(-2px); }
+                .btn-theme-menu .theme-arrow { margin-left: auto; transition: transform .25s ease; }
+                .btn-theme-menu.open .theme-arrow { transform: rotate(180deg); }
+                .theme-panel { margin-top: 10px; padding: 14px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; }
+                .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+                .theme-item { position: relative; cursor: pointer; border: 2px solid transparent; border-radius: 12px; padding: 8px; background: rgba(255,255,255,0.05); text-align: center; transition: all .2s ease; color: #e0e6ed; font-size: 12px; font-weight: 600; font-family: inherit; }
+                .theme-item:hover { transform: translateY(-2px); background: rgba(255,255,255,0.12); }
+                .theme-item.selected { border-color: #ffffff; background: rgba(255,255,255,0.14); }
+                .theme-swatch { height: 46px; border-radius: 8px; margin-bottom: 6px; position: relative; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+                .theme-swatch .sw-nav { position: absolute; left: 0; right: 0; top: 0; height: 14px; }
+                .theme-swatch .sw-dot { position: absolute; right: 7px; bottom: 6px; width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.85); }
+                .theme-item .theme-check { position: absolute; top: 4px; right: 6px; font-size: 13px; color: #fff; background: #22c55e; border-radius: 50%; width: 18px; height: 18px; line-height: 18px; display: none; }
+                .theme-item.selected .theme-check { display: block; }
+                .theme-note { font-size: 11px; color: #a0aec0; margin-top: 10px; line-height: 1.5; }
+        .theme-section-title { font-size: 13px; font-weight: 700; color: #ffffff; margin: 16px 0 10px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.2); }
+                .theme-tagrow { display: flex; justify-content: center; gap: 4px; margin-top: 4px; }
+                .theme-price { font-size: 10px; padding: 1px 7px; border-radius: 99px; background: rgba(255,255,255,0.15); color: #fde68a; }
+                .theme-price.free { color: #86efac; }
+                .theme-badge { font-size: 10px; padding: 1px 7px; border-radius: 99px; background: #ef4444; color: #fff; font-weight: 700; }
+                .theme-tagline { font-size: 10px; color: #a0aec0; margin-top: 3px; font-weight: 400; line-height: 1.3; }
+
+        /* ===== สติกเกอร์ / มาสคอต / ของตกลงมา จากร้านธีม ===== */
+        .deco-item { position: fixed; pointer-events: none; }
+        .deco-front { z-index: 600; }
+        .deco-back { z-index: -1; }
+        .deco-inner { position: relative; }
+        .deco-inner img { width: 100%; height: auto; display: block; }
+        .deco-emoji { line-height: 1; text-align: center; white-space: nowrap; }
+        .deco-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; margin-bottom: 4px; background: var(--surface, #fff); color: var(--strong, #111); border: 2px solid var(--accent, #f90); border-radius: 14px; padding: 4px 12px; font-size: 12px; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .anim-float { animation: thFloat 3s ease-in-out infinite; }
+        .anim-sway { animation: thSway 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-spin { animation: thSpin 12s linear infinite; }
+        .anim-pulse { animation: thPulse 2s ease-in-out infinite; }
+        @keyframes thFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes thSway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @keyframes thSpin { to { transform: rotate(360deg); } }
+        @keyframes thPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+        .deco-fall { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 550; }
+        .deco-fall span { position: absolute; top: -10%; opacity: .85; animation: thFall linear infinite; }
+        @keyframes thFall { 0% { transform: translateY(-10vh) rotate(0deg); } 100% { transform: translateY(112vh) rotate(360deg); } }
+        @media (max-width: 700px) { .deco-hm { display: none !important; } }
+        @media (prefers-reduced-motion: reduce) { .deco-fall { display: none; } }
+        .navbar, .navbar h1 { color: var(--on-nav); }
+        .sidebar-content { overflow-y: auto; }
+
+        /* ===== แถบ Theme (แถบที่ 3 สไลด์ออกจากข้างเมนู) ===== */
+        .theme-drawer { position: fixed; top: 0; left: -340px; width: 310px; height: 100%; z-index: 2999; background-color: var(--sidebar); background-image: linear-gradient(rgba(0,0,0,0.22), rgba(0,0,0,0.22)); box-shadow: 8px 0 25px rgba(0,0,0,0.5); border-right: 1px solid rgba(255,255,255,0.1); padding: 25px 20px; display: flex; flex-direction: column; visibility: hidden; transition: left 0.3s ease, visibility 0s linear 0.3s; }
+        .theme-drawer.open { left: 310px; visibility: visible; transition: left 0.3s ease, visibility 0s; }
+        .theme-drawer-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; margin-bottom: 18px; }
+        .theme-drawer-header h3 { font-size: 18px; color: var(--on-nav); font-weight: 700; }
+        .theme-drawer-body { flex-grow: 1; overflow-y: auto; padding: 4px 2px 10px; }
+        .btn-theme-menu .theme-arrow { font-size: 22px; line-height: 1; }
+        .btn-theme-menu.open { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.35); }
+        .theme-swatch { z-index: 1; }
+        .theme-item .theme-check { z-index: 5; }
+        @media (max-width: 700px) {
+            .theme-drawer { width: calc(100vw - 50px); z-index: 3001; }
+            .theme-drawer.open { left: 50px; }
+        }
+            /* ธีม v4: ให้หน้าต่างเป็นจุดอ้างอิงของของตกแต่งมุมกล่อง */
+        .modal-box, .studata-box { position: relative; }
+        /* ให้เลื่อนที่ชั้นพื้นหลังแทนในกล่อง เพื่อให้ของตกแต่งมุมกล่อง (ธีม) ยื่นออกนอกกล่องได้ไม่โดนตัด */
+        #detail-modal { overflow-y: auto; align-items: flex-start; }
+        #detail-modal .modal-box { max-height: none; overflow: visible; margin: auto; }
+    </style>
+    <script>
+        /* ===== ร้านธีม: ดึงธีมที่ admin สร้างไว้ (ชีต Admin คอลัมน์ Q เป็นต้นไป) มาให้เลือก ===== */
+        // ===== ลิงก์ Apps Script (ใส่ที่เดียวตรงนี้ที่เดียว) =====
+        const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzgkaA8d9v4jHKqN1Sp4K4t_NXzWMR8NqEVYhC2R6doJv0Pg6YNPF8wlAIVi2fLOSvo/exec";
+        const THEME_API = BACKEND_URL; // ใช้ลิงก์เดียวกับด้านบน ไม่ต้องแก้ซ้ำ
+        const SHOP_CACHE_KEY = 'shop_themes_cache_v3';
+        const THEME_SEL = { page: 'body', nav: '.navbar', card: '.task-card', side: '.sidebar-drawer', main: '.main-container', btn: '.btn-view, .btn-submit-work, .btn-save-studata', modal: '.modal-box, .studata-box', mtitle: '.submit-title', backdrop: '.modal-overlay', input: '#selected-drive-file, .studata-field input, .studata-field select', drop: '.submit-section label.dropzone', tile: '.submit-tab', title: '.main-container h2, .submit-title', navTitle: '.navbar h1', user: '.user-info', userLabel: '.user-info strong', userVal: '.user-info span', home: '.btn-home', menu: '.btn-sidebar-toggle', sideHead: '.sidebar-header h3', sub: '.card-subject', lnk: '.card-link', lbl: '.studata-field label' };
+        const THEMES = [{ id: 'default', name: 'กรมท่า (เริ่มต้น)', nav: '#1a365d', bg: '#112233', accent: '#ff9f43' }];
+        let SHOP_THEMES = [];   // { id:'shop-xxx', name, price, config }
+
+        const THEME_FONTS = {
+            prompt: ['Prompt', 'Prompt', 'Prompt:wght@400;600;700'],
+            kanit: ['Kanit', 'Kanit', 'Kanit:wght@400;600;700'],
+            sarabun: ['Sarabun (ทางการ)', 'Sarabun', 'Sarabun:wght@400;600;700'],
+            mitr: ['Mitr (หนาป้อม)', 'Mitr', 'Mitr:wght@400;500;600'],
+            mali: ['Mali (ลายมือน่ารัก)', 'Mali', 'Mali:wght@400;600;700'],
+            itim: ['Itim (ลายมือเด็ก)', 'Itim', 'Itim'],
+            sriracha: ['Sriracha (ลายมือ)', 'Sriracha', 'Sriracha'],
+            pattaya: ['Pattaya (หัวมน)', 'Pattaya', 'Pattaya'],
+            charmonman: ['Charmonman (อักษรหวาน)', 'Charmonman', 'Charmonman:wght@400;700'],
+            srisakdi: ['Srisakdi (ลายเส้น)', 'Srisakdi', 'Srisakdi:wght@400;700'],
+            chakra: ['Chakra Petch (ไซไฟ)', 'Chakra Petch', 'Chakra+Petch:wght@400;600;700'],
+            k2d: ['K2D', 'K2D', 'K2D:wght@400;600;700'],
+            niramit: ['Niramit', 'Niramit', 'Niramit:wght@400;600;700'],
+            athiti: ['Athiti', 'Athiti', 'Athiti:wght@400;600;700'],
+            krub: ['Krub', 'Krub', 'Krub:wght@400;600;700'],
+            pridi: ['Pridi (มีหัว)', 'Pridi', 'Pridi:wght@400;600;700']
+        };
+
+        /* ================================================================================
+           THEME ENGINE v4 START — ใช้ร่วมกันทั้งหน้า admin (ตัวอย่างสด) / หน้าครู / หน้านักเรียน
+           (คัดลอกบล็อกนี้ทั้งก้อน START…END ไปวางแทนเอนจินเดิมในหน้าครู/นักเรียนได้เลย)
+           เพิ่มใหม่: ความโปร่งใสกล่อง • สีตัวอักษรแยกส่วน • วิดีโอ • สติกเกอร์ปรับละเอียด • ไล่สี 3 สี/วงกลม • เงาตัวอักษร
+           ================================================================================ */
+        function thNum(v, a, b, d) { v = Number(v); return isFinite(v) ? Math.min(b, Math.max(a, Math.round(v))) : d; }
+        function thImg(u) {
+            u = String(u || '').trim();
+            const m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/);
+            if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+            return /^https:\/\/[^\s"'<>()\\]+$/.test(u) ? u.substring(0, 1000) : '';
+        }
+        function thFlt(v, a, b, d) { v = Number(v); return (v === null || !isFinite(v)) ? d : Math.round(Math.min(b, Math.max(a, v)) * 100) / 100; }
+        /* แปลงลิงก์แชร์ Google Drive เป็นลิงก์เล่นตรงสำหรับแท็ก <video> (ตรงกับ thVidDrive ในหน้า admin) */
+        function thVidDrive(u) {
+            u = String(u || '').trim();
+            const m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/) || u.match(/drive\.usercontent\.google\.com\/download\?(?:[^#]*&)?id=([\w-]+)/);
+            return m ? 'https://drive.usercontent.google.com/download?id=' + m[1] + '&export=download&confirm=t' : '';
+        }
+        function thVid(u) { u = String(u || '').trim(); const d = thVidDrive(u); if (d) return d; return /^https:\/\/[^\s"'<>()\\]+$/.test(u) ? u.substring(0, 1000) : ''; }
+        function cleanCfgBase(c) {
+            c = c || {};
+            const al = (v) => (v === undefined || v === null || v === '') ? 100 : thNum(v, 0, 100, 100);
+            const hex = (v, d) => /^#[0-9a-fA-F]{6}$/.test(String(v || '')) ? String(v) : d;
+            const hex0 = (v) => /^#[0-9a-fA-F]{6}$/.test(String(v || '')) ? String(v) : '';
+            const txt = (v, n) => String(v || '').replace(/[<>"'`\\&]/g, '').trim().substring(0, n);
+            const inl = (v, list, d) => list.indexOf(v) !== -1 ? v : d;
+            const emo = (v, n) => Array.from(txt(v, 48)).slice(0, n).join('');
+            const bool = (v, d) => (v === undefined || v === null || v === '') ? d : ((v === 0 || v === false || v === '0') ? 0 : 1);
+            const rad = (v, max) => (v === '' || v == null || !isFinite(Number(v)) || Number(v) < 0) ? -1 : thNum(v, 0, max, -1);
+            const o = {
+                mode: c.mode === 'light' ? 'light' : 'dark',
+                bg: hex(c.bg, '#0d1b2a'), surface: hex(c.surface, '#112233'), nav1: hex(c.nav1, '#0f2b48'), nav2: hex(c.nav2, '#1a365d'),
+                card1: hex(c.card1, '#1b2e4b'), accent: hex(c.accent, '#ff9f43'), text: hex(c.text, '#e0e6ed'), strong: hex(c.strong, '#ffffff'),
+                tagline: txt(c.tagline, 80),
+                badge: inl(c.badge, ['NEW', 'HOT', 'SALE'], ''),
+                /* ความโปร่งใสของกล่อง (100 = ทึบเหมือนเดิม) / เบลอด้านหลัง / สีกล่องเสริม */
+                navAlpha: al(c.navAlpha), sideAlpha: al(c.sideAlpha), mainAlpha: al(c.mainAlpha), cardAlpha: al(c.cardAlpha), modalAlpha: al(c.modalAlpha), inputAlpha: al(c.inputAlpha),
+                navBlur: thNum(c.navBlur, 0, 30, 0), sideBlur: thNum(c.sideBlur, 0, 30, 0), mainBlur: thNum(c.mainBlur, 0, 30, 0),
+                card2: hex0(c.card2), sideBg: hex0(c.sideBg), modalBg: hex0(c.modalBg), inputBg: hex0(c.inputBg), lineColor: hex0(c.lineColor), cardShadowColor: hex0(c.cardShadowColor),
+                /* สีตัวอักษรแยกส่วน (ว่าง = อัตโนมัติเหมือนเดิม) */
+                pageTitle: hex0(c.pageTitle), navText: hex0(c.navText), sideText: hex0(c.sideText), cardText: hex0(c.cardText), cardTitle: hex0(c.cardTitle),
+                muted: hex0(c.muted), btnText: hex0(c.btnText), inputText: hex0(c.inputText), placeholder: hex0(c.placeholder), modalText: hex0(c.modalText), modalTitle: hex0(c.modalTitle),
+                /* สีละเอียดเพิ่มเติม: ชื่อหน้า • กล่องข้อมูลผู้ใช้ • ปุ่มเมนู/กลับหน้าหลัก • หัวข้อแถบข้าง • ชื่อวิชา • ลิงก์ • ป้ายช่องกรอก (ว่าง = อัตโนมัติ) */
+                navTitle: hex0(c.navTitle), userLabel: hex0(c.userLabel), userValue: hex0(c.userValue), userSep: hex0(c.userSep), userBg: hex0(c.userBg), userLine: hex0(c.userLine),
+                homeText: hex0(c.homeText), homeBg: hex0(c.homeBg), menuText: hex0(c.menuText), menuBg: hex0(c.menuBg),
+                sideTitle: hex0(c.sideTitle), subject: hex0(c.subject), linkText: hex0(c.linkText), label: hex0(c.label),
+                textShadow: inl(c.textShadow, ['soft', 'strong', 'glow', 'outline'], ''),
+                /* ตัวอักษร / เคอร์เซอร์ */
+                font: inl(c.font, Object.keys(THEME_FONTS), ''), titleFont: inl(c.titleFont, Object.keys(THEME_FONTS), ''),
+                titleFx: inl(c.titleFx, ['gradient', 'shadow', 'glow', 'outline', 'rainbow'], ''),
+                cursor: emo(c.cursor, 4), scrollTheme: bool(c.scrollTheme, 0),
+                /* พื้นหลัง */
+                bgGrad: hex0(c.bgGrad), bgAngle: thNum(c.bgAngle, 0, 360, 160), bgGrad2: hex0(c.bgGrad2), bgGradType: inl(c.bgGradType, ['radial'], ''),
+                pattern: emo(c.pattern, 4), patSize: thNum(c.patSize, 30, 200, 90), patOpacity: thNum(c.patOpacity, 5, 90, 22),
+                bgImage: thImg(c.bgImage), bgSize: inl(c.bgSize, ['cover', 'contain', 'tile'], 'cover'),
+                bgFixed: bool(c.bgFixed, 1), bgOverlay: thNum(c.bgOverlay, 0, 95, 50),
+                ambient: inl(c.ambient, ['aurora', 'stars', 'bokeh', 'fireflies'], ''), ambientLevel: thNum(c.ambientLevel, 10, 100, 50),
+                frame: inl(c.frame, ['solid', 'dashed', 'dotted', 'double', 'neon'], ''), frameWidth: thNum(c.frameWidth, 2, 16, 6), frameColor: hex0(c.frameColor), frameEmoji: emo(c.frameEmoji, 4),
+                /* รูปบนส่วนต่างๆ */
+                navImage: thImg(c.navImage), navOverlay: thNum(c.navOverlay, 0, 95, 35),
+                cardImage: thImg(c.cardImage), cardOverlay: thNum(c.cardOverlay, 0, 95, 60),
+                sideImage: thImg(c.sideImage), sideOverlay: thNum(c.sideOverlay, 0, 95, 50),
+                mainImage: thImg(c.mainImage), mainOverlay: thNum(c.mainOverlay, 0, 95, 60),
+                /* การ์ด */
+                radius: rad(c.radius, 32),
+                cardBorder: inl(c.cardBorder, ['solid', 'dashed', 'dotted', 'none'], ''), cardBorderW: thNum(c.cardBorderW, 0, 8, 0), cardBorderColor: hex0(c.cardBorderColor),
+                cardStyle: inl(c.cardStyle, ['glass', 'flat', 'neon', 'paper', 'sticker'], ''), glassBlur: thNum(c.glassBlur, 0, 30, 0),
+                cardShadow: thNum(c.cardShadow, 0, 100, 0), cardHover: inl(c.cardHover, ['lift', 'tilt', 'glow', 'bounce', 'zoom'], ''),
+                glow: c.glow ? 1 : 0,
+                /* ปุ่ม / ช่องกรอก */
+                btnStyle: inl(c.btnStyle, ['gradient', 'outline', 'soft', 'glass'], ''), btnColor: hex0(c.btnColor), btnColor2: hex0(c.btnColor2), btnRadius: rad(c.btnRadius, 40),
+                btnShadow: inl(c.btnShadow, ['soft', 'glow', 'pop3d'], ''), btnHover: inl(c.btnHover, ['lift', 'pulse', 'wiggle', 'shine'], ''),
+                inputStyle: inl(c.inputStyle, ['underline', 'pill', 'soft', 'glow'], ''),
+                /* หน้าต่างสร้างกล่องงาน / ส่งงาน */
+                modalAnim: inl(c.modalAnim, ['pop', 'slide', 'drop', 'zoom', 'flip'], ''), modalRadius: rad(c.modalRadius, 40),
+                modalBorder: inl(c.modalBorder, ['solid', 'dashed', 'dotted', 'double', 'neon'], ''), modalGlow: bool(c.modalGlow, 0), modalGlass: bool(c.modalGlass, 0),
+                modalHead: inl(c.modalHead, ['gradient', 'underline', 'pill'], ''), modalDeco: emo(c.modalDeco, 4), modalDecoPos: inl(c.modalDecoPos, ['tr', 'tl', 'top', 'diag'], 'tr'),
+                backdropColor: hex0(c.backdropColor), backdropOpacity: thNum(c.backdropOpacity, 20, 90, 60), backdropBlur: thNum(c.backdropBlur, 0, 16, 0),
+                dropStyle: inl(c.dropStyle, ['solid', 'dashed', 'dotted', 'glow'], ''), dropAnim: inl(c.dropAnim, ['pulse', 'wiggle'], ''),
+                /* ฉลองความสำเร็จ */
+                celebrate: inl(c.celebrate, ['confetti', 'burst', 'rain', 'fireworks'], ''), celebEmoji: emo(c.celebEmoji, 12), celebCount: thNum(c.celebCount, 10, 120, 44),
+                celebText: txt(c.celebText, 60), celebText2: txt(c.celebText2, 60),
+                /* ของตกลงมา / เมาส์ */
+                fall: emo(c.fall, 10), fallCount: thNum(c.fallCount, 3, 40, 14), fallSpeed: thNum(c.fallSpeed, 3, 30, 12), fallSize: thNum(c.fallSize, 10, 60, 22),
+                fallDir: inl(c.fallDir, ['up', 'diag'], 'down'), fallSpin: bool(c.fallSpin, 1), fallSway: bool(c.fallSway, 0),
+                /* ของตกลงมา — ตัวเลือกเสริม (ค่าเริ่มต้น = พฤติกรรมเดิมทุกอย่าง) */
+                fallLayer: inl(c.fallLayer, ['back', 'mix'], 'front'), fallBackPct: thNum(c.fallBackPct, 0, 100, 50),
+                fallX1: thNum(c.fallX1, 0, 100, 0), fallX2: thNum(c.fallX2, 0, 100, 100),
+                fallOpacity: thNum(c.fallOpacity, 10, 100, 85), fallBackOpacity: thNum(c.fallBackOpacity, 10, 100, 70),
+                fallBlur: thFlt(c.fallBlur, 0, 8, 0), fallBackBlur: thFlt(c.fallBackBlur, 0, 8, 0), fallBackSmall: bool(c.fallBackSmall, 0),
+                fallWind: thNum(c.fallWind, -60, 60, 0), fallGlow: hex0(c.fallGlow), fallSizeVar: thNum(c.fallSizeVar, 0, 100, 50),
+                clickFx: inl(c.clickFx, ['sparkle', 'hearts', 'ripple', 'confetti'], ''), trail: emo(c.trail, 8),
+                stickers: [], videos: []
+            };
+            const arr = Array.isArray(c.stickers) ? c.stickers.slice(0, 12) : [];
+            if (!arr.length && c.mascotUrl) arr.push({ url: c.mascotUrl, pos: 'bl', size: 130, anim: 'sway', text: c.mascotText }); // ธีมรุ่นเก่า
+            arr.forEach(s => {
+                s = s || {};
+                const url = thImg(s.url), em = emo(s.emoji, 4);
+                if (!url && !em) return;
+                o.stickers.push({
+                    url: url, emoji: url ? '' : em,
+                    pos: inl(s.pos, ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br', 'free'], 'br'), x: thFlt(s.x, 0, 100, 50), y: thFlt(s.y, 0, 100, 50),
+                    size: thNum(s.size, 20, 600, 120), opacity: thNum(s.opacity, 10, 100, 100), off: thNum(s.off, 0, 400, 12),
+                    rotate: thNum(s.rotate, -180, 180, 0), flip: bool(s.flip, 0), shadow: bool(s.shadow, 0),
+                    anim: inl(s.anim, ['none', 'float', 'spin', 'pulse', 'sway', 'bounce', 'wiggle', 'heart', 'swing', 'tada', 'shake', 'rubber', 'flash', 'drift'], 'none'), layer: s.layer === 'back' ? 'back' : 'front',
+                    hideMobile: bool(s.hideMobile, 1), text: txt(s.text, 60),
+                    speed: thFlt(s.speed, 0.5, 3, 1), delay: thFlt(s.delay, 0, 10, 0), hue: thNum(s.hue, 0, 360, 0), gray: thNum(s.gray, 0, 100, 0), bright: thNum(s.bright, 50, 150, 100),
+                    blur: thFlt(s.blur, 0, 10, 0), round: thNum(s.round, 0, 50, 0), glowC: hex0(s.glowC), glowSize: thNum(s.glowSize, 4, 40, 14), bubbleBg: hex0(s.bubbleBg), bubbleText: hex0(s.bubbleText)
+                });
+            });
+            (Array.isArray(c.videos) ? c.videos.slice(0, 4) : []).forEach(v => {
+                v = v || {};
+                const url = thVid(v.url); if (!url) return;
+                o.videos.push({
+                    url: url, mode: inl(v.mode, ['bg', 'box'], 'box'), pos: inl(v.pos, ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br'], 'br'),
+                    size: thNum(v.size, 80, 900, 280), off: thNum(v.off, 0, 400, 16), opacity: thNum(v.opacity, 5, 100, 100), radius: thNum(v.radius, 0, 80, 16),
+                    ratio: inl(v.ratio, ['16:9', '9:16', '1:1', '4:3'], '16:9'), fit: inl(v.fit, ['cover', 'contain'], 'cover'), shape: inl(v.shape, ['circle'], ''),
+                    speed: thFlt(v.speed, 0.25, 2, 1), dim: thNum(v.dim, 0, 90, 35), layer: v.layer === 'back' ? 'back' : 'front',
+                    loop: bool(v.loop, 1), shadow: bool(v.shadow, 1), border: bool(v.border, 0), hideMobile: bool(v.hideMobile, 1)
+                });
+            });
+            return o;
+        }
+        /* ===== ตกแต่งรายหน้า (PAGE DECOR) — ธีมหนึ่งชุดมีของตกแต่งแยกแต่ละหน้า ขายทั้งชุดเหมือนธีม LINE ===== */
+        const PAGE_DECOR = [
+            ['teacher', '👩‍🏫 หน้าครู'], ['student', '🎓 หน้านักเรียน'], ['box', '📦 ตอนสร้างกล่องงาน'], ['submit', '📤 ตอนส่งงาน'],
+            ['assign', '🗂️ ประวัติสั่งงาน (ครู)'], ['assigndlg', '❓ กล่องยืนยัน (ประวัติสั่งงาน)'],
+            ['subhist', '🕘 ประวัติส่งงาน (นักเรียน)'], ['subtrash', '🗑️ ถังขยะ (ประวัติส่งงาน)'], ['subdlg', '❓ กล่องยืนยัน (ประวัติส่งงาน)']
+        ];
+        const PAGE_KEYS = PAGE_DECOR.map(a => a[0]);
+        const PAGE_MAX_STK = 8, PAGE_MAX_VID = 2;
+        const PAGE_FALL_KEYS = ['fall', 'fallCount', 'fallSpeed', 'fallSize', 'fallDir', 'fallSpin', 'fallSway', 'fallLayer', 'fallBackPct', 'fallX1', 'fallX2', 'fallOpacity', 'fallBackOpacity', 'fallBlur', 'fallBackBlur', 'fallBackSmall', 'fallWind', 'fallGlow', 'fallSizeVar'];
+        const PAGE_FRAME_KEYS = ['frame', 'frameWidth', 'frameColor', 'frameEmoji'];
+        function pageDecorDefaults() {
+            const b = cleanCfgBase({}), o = { inherit: 1, stickers: [], videos: [] };
+            ['ambient', 'ambientLevel'].concat(PAGE_FALL_KEYS, PAGE_FRAME_KEYS).forEach(k => { o[k] = b[k]; });
+            return o;
+        }
+        /* กรองค่าธีมทั้งก้อน + ของตกลงแต่งรายหน้า (cfg.pages[หน้า]) — หน้าเก่าที่ไม่รู้จัก pages จะข้ามไปเฉยๆ */
+        function cleanCfg(c) {
+            const o = cleanCfgBase(c), src = (c && c.pages && typeof c.pages === 'object') ? c.pages : null;
+            if (!src) return o;
+            const pg = {};
+            PAGE_KEYS.forEach(k => {
+                const p = src[k]; if (!p || typeof p !== 'object') return;
+                const b = cleanCfgBase(p), keep = (p.inherit === 0 || p.inherit === false || p.inherit === '0') ? 0 : 1;
+                const r = { inherit: keep, stickers: b.stickers.slice(0, PAGE_MAX_STK), videos: b.videos.slice(0, PAGE_MAX_VID) };
+                if (b.ambient) { r.ambient = b.ambient; r.ambientLevel = b.ambientLevel; }
+                if (b.fall) PAGE_FALL_KEYS.forEach(f => { r[f] = b[f]; });
+                if (b.frame) PAGE_FRAME_KEYS.forEach(f => { r[f] = b[f]; });
+                if (r.stickers.length || r.videos.length || r.ambient || r.fall || r.frame || !keep) pg[k] = r;
+            });
+            if (Object.keys(pg).length) o.pages = pg;
+            return o;
+        }
+        /* รวมของตกแต่งส่วนกลาง + ของเฉพาะหน้า → ค่าที่ใช้ส่งให้ renderDecor(cfg, host) ของหน้านั้น
+           key = teacher|student|box|submit|assign|assigndlg|subhist|subtrash|subdlg */
+        function themePageCfg(c, key) {
+            const p = c && c.pages && c.pages[key]; if (!p) return c;
+            const o = Object.assign({}, c);
+            if (p.inherit === 0) { o.stickers = []; o.videos = []; o.ambient = ''; o.fall = ''; o.frame = ''; }
+            o.stickers = (o.stickers || []).concat(p.stickers || []);
+            o.videos = (o.videos || []).concat(p.videos || []);
+            if (p.ambient) { o.ambient = p.ambient; o.ambientLevel = p.ambientLevel; }
+            if (p.fall) PAGE_FALL_KEYS.forEach(f => { o[f] = p[f]; });
+            if (p.frame) PAGE_FRAME_KEYS.forEach(f => { o[f] = p[f]; });
+            return o;
+        }
+        /* ===== สลับของตกแต่งตามหน้า/หน้าต่างที่เปิดอยู่ (ใช้ cfg.pages ของธีมที่ admin ตั้งไว้) ===== */
+        let _tdCfg = null, _tdBase = 'teacher', _tdWatch = [], _tdStack = [], _tdSig = null;
+        function themeDecorConfig(base, watch) { _tdBase = base; _tdWatch = watch || []; }
+        function themeDecorWatch(id, key) {
+            const el = document.getElementById(id); if (!el || el._tdw) return; el._tdw = 1;
+            let on = false;
+            const sync = () => {
+                const now = !el.classList.contains('hidden') && el.style.display !== 'none';
+                if (now === on) return; on = now;
+                const i = _tdStack.indexOf(key);
+                if (now) { if (i < 0) _tdStack.push(key); } else if (i >= 0) _tdStack.splice(i, 1);
+                themeDecorApply();
+            };
+            new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+            sync();
+        }
+        function themeDecorApply(c, force) {
+            if (c !== undefined) _tdCfg = c;
+            const host = document.getElementById('theme-deco'); if (!host) return;
+            _tdWatch.forEach(w => themeDecorWatch(w[0], w[1]));
+            const key = _tdStack.length ? _tdStack[_tdStack.length - 1] : _tdBase;
+            const eff = _tdCfg ? themePageCfg(_tdCfg, key) : null;
+            const sig = eff ? JSON.stringify([eff.ambient, eff.ambientLevel, eff.accent, eff.nav1, eff.bgGrad, eff.strong, eff.bg].concat(PAGE_FALL_KEYS.map(k => eff[k]), PAGE_FRAME_KEYS.map(k => eff[k]), [eff.stickers, eff.videos])) : '';
+            if (!force && sig === _tdSig) return;
+            _tdSig = sig;
+            renderDecor(eff, host);
+        }
+        function _hx(h) { h = String(h).replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
+        function _mix(a, b, t) { const x = _hx(a), y = _hx(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+        function _lum(h) { const c = _hx(h); return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
+        function _rgba(h, a) { return 'rgba(' + _hx(h).join(',') + ',' + a + ')'; }
+        function _hsl(h) {
+            const v = _hx(h).map(x => x / 255), mx = Math.max(v[0], v[1], v[2]), mn = Math.min(v[0], v[1], v[2]), d = mx - mn;
+            let H = 0, S = 0; const L = (mx + mn) / 2;
+            if (d) { S = L > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); H = mx === v[0] ? (v[1] - v[2]) / d + (v[1] < v[2] ? 6 : 0) : mx === v[1] ? (v[2] - v[0]) / d + 2 : (v[0] - v[1]) / d + 4; H *= 60; }
+            return [H, S * 100, L * 100];
+        }
+        function _fromHsl(h, s, l) {
+            h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100;
+            const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+            return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+        }
+        /* คำนวณความสว่าง/อัตราส่วนความชัด + สีอัตโนมัติของข้อมูลผู้ใช้บนแถบบน */
+        function _rl(h) { const c = _hx(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
+        function _cr(a, b) { const x = _rl(a), y = _rl(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+        function thNavMid(c) { return _mix(c.nav1, c.nav2, 0.5); }
+        function thOnNav(c) { return c.navText || (_lum(thNavMid(c)) > 0.62 ? '#0f172a' : '#ffffff'); }
+        function thUserVal(c) {
+            if (c.userValue) return c.userValue;
+            const mid = thNavMid(c);
+            if (_cr(c.accent, mid) >= 3) return c.accent;
+            /* สีเน้นกลืนกับแถบบน → ไล่ให้เข้ม/สว่างขึ้นจนอ่านออก (ยังคงโทนสีธีม และไม่เหมือนสีป้าย) */
+            const toward = _lum(mid) > 0.62 ? '#000000' : '#ffffff';
+            for (let t = 0.15; t <= 1.0001; t += 0.1) { const x = _mix(c.accent, toward, t); if (_cr(x, mid) >= 4.5) return x; }
+            return thOnNav(c);
+        }
+        function themeVars(c) {
+            const L = c.mode === 'light';
+            return {
+                '--bg': c.bg, '--surface': c.surface, '--nav1': c.nav1, '--nav2': c.nav2, '--card1': c.card1,
+                '--card2': c.card2 || _mix(c.card1, c.bg, 0.45), '--card3': _mix(c.card1, c.accent, 0.14),
+                '--sidebar': c.sideBg || c.nav2, '--modal': c.modalBg || c.surface, '--accent': c.accent, '--accent2': _mix(c.accent, '#000000', 0.18), '--accent-rgb': _hx(c.accent).join(','),
+                '--on-accent': _lum(c.accent) > 0.55 ? '#0f172a' : '#ffffff',
+                '--on-nav': c.navText || (_lum(_mix(c.nav1, c.nav2, 0.5)) > 0.62 ? '#0f172a' : '#ffffff'),
+                '--on-side': c.sideText || c.navText || (_lum(_mix(c.nav1, c.nav2, 0.5)) > 0.62 ? '#0f172a' : '#ffffff'),
+                '--text': c.text, '--strong': c.strong, '--muted': c.muted || _mix(c.text, c.bg, 0.4),
+                '--panel': L ? 'rgba(15,23,42,0.04)' : 'rgba(0,0,0,0.25)', '--panel2': L ? 'rgba(15,23,42,0.05)' : 'rgba(0,0,0,0.3)',
+                '--line': c.lineColor || (L ? 'rgba(15,23,42,0.14)' : 'rgba(255,255,255,0.12)'),
+                '--input-bg': c.inputBg || (L ? _mix(c.surface, c.text, 0.06) : 'rgba(0,0,0,0.25)')
+            };
+        }
+        /* โหลดฟอนต์จาก Google Fonts ตามที่ธีมเลือก (เรียกทุกครั้งที่ใช้ธีม) */
+        function applyThemeFont(c) {
+            let link = document.getElementById('thxFontLink');
+            const keys = []; [c && c.font, c && c.titleFont].forEach(k => { if (k && THEME_FONTS[k] && keys.indexOf(k) === -1) keys.push(k); });
+            if (!keys.length) { if (link) link.remove(); return; }
+            const href = 'https://fonts.googleapis.com/css2?' + keys.map(k => 'family=' + THEME_FONTS[k][2]).join('&') + '&display=swap';
+            if (!link) { link = document.createElement('link'); link.id = 'thxFontLink'; link.rel = 'stylesheet'; document.head.appendChild(link); }
+            if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+        }
+        /* สร้าง CSS ของธีมหนึ่งธีม  scope = ตัวเลือกหลัก, S = ตัวเลือกของแต่ละหน้า
+           S รองรับ: page nav card side main btn modal mtitle backdrop input drop tile title  (ไม่ใส่ตัวไหน = ข้ามส่วนนั้น) */
+        function themeCss(scope, c, S) {
+            S = S || {};
+            const v = themeVars(c), acc = c.accent, A = (a) => _rgba(acc, a), L = c.mode === 'light';
+            const sel = (list) => list.split(',').map(x => scope + ' ' + x.trim()).join(',');
+            const selp = (list, ps) => list.split(',').map(x => scope + ' ' + x.trim() + ps).join(',');
+            const sub = (list, tags) => list.split(',').map(x => tags.split(',').map(t => scope + ' ' + x.trim() + ' ' + t.trim()).join(',')).join(',');
+            const blurCss = (n) => 'backdrop-filter:blur(' + n + 'px);-webkit-backdrop-filter:blur(' + n + 'px);';
+            const q = (u) => 'url("' + u + '")';
+            const hue = _hsl(acc)[0], acc2 = _fromHsl(hue + 50, _hsl(acc)[1], _hsl(acc)[2]);
+            let css = scope + '{' + Object.keys(v).map(k => k + ':' + v[k] + ';').join('') + '}\n';
+
+            /* ---- พื้นหลัง ---- */
+            const im = [], sz = [], rp = [], ps = [];
+            if (c.pattern) {
+                const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='" + c.patSize + "' height='" + c.patSize + "'><text x='" + Math.round(c.patSize * 0.24) + "' y='" + Math.round(c.patSize * 0.62) + "' font-size='" + Math.round(c.patSize * 0.36) + "' fill-opacity='" + (c.patOpacity / 100) + "'>" + c.pattern + "</text></svg>";
+                im.push('url("data:image/svg+xml,' + encodeURIComponent(svg) + '")'); sz.push(c.patSize + 'px ' + c.patSize + 'px'); rp.push('repeat'); ps.push('0 0');
+            }
+            if (c.bgImage) {
+                const a = c.bgOverlay / 100;
+                im.push('linear-gradient(' + _rgba(c.bg, a) + ',' + _rgba(c.bg, a) + ')'); sz.push('100% 100%'); rp.push('no-repeat'); ps.push('0 0');
+                im.push(q(c.bgImage)); sz.push(c.bgSize === 'tile' ? 'auto' : c.bgSize); rp.push(c.bgSize === 'tile' ? 'repeat' : 'no-repeat'); ps.push('center');
+            }
+            if (c.bgGrad) {
+                im.push(c.bgGradType === 'radial' ? 'radial-gradient(ellipse at 50% 35%,' + (c.bgGrad2 ? c.bgGrad2 + ',' : '') + c.bgGrad + ',' + c.bg + ')' : 'linear-gradient(' + c.bgAngle + 'deg,' + c.bg + ',' + c.bgGrad + (c.bgGrad2 ? ',' + c.bgGrad2 : '') + ')');
+                sz.push('100% 100%'); rp.push('no-repeat'); ps.push('0 0');
+            }
+            if (im.length) {
+                const bgDecl = 'background-image:' + im.join(',') + ';background-size:' + sz.join(',') + ';background-repeat:' + rp.join(',') + ';background-position:' + ps.join(',') + ';';
+                if (c.bgFixed && S.page) css += sel(S.page) + '::before{content:\"\";position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;pointer-events:none;will-change:transform;transform:translateZ(0);' + bgDecl + '}\n';
+                else css += (S.page ? sel(S.page) : scope) + '{' + bgDecl + 'background-attachment:' + (c.bgFixed ? 'fixed' : 'scroll') + ';}\n';
+            }
+
+            const layer = (a, g1, g2, img) => 'background-image:linear-gradient(' + g1 + ',' + _rgba(g2[0], a) + ',' + _rgba(g2[1], a) + '),' + q(img) + ';background-size:100% 100%,cover;background-position:0 0,center;background-repeat:no-repeat;';
+            if (S.nav && c.navImage) css += sel(S.nav) + '{' + layer(c.navOverlay / 100, '135deg', [c.nav1, c.nav2], c.navImage) + '}\n';
+            if (S.side && c.sideImage) css += sel(S.side) + '{' + layer(c.sideOverlay / 100, '180deg', [c.nav2, c.nav1], c.sideImage) + '}\n';
+            if (S.main && c.mainImage) css += sel(S.main) + '{' + layer(c.mainOverlay / 100, '165deg', [c.surface, c.surface], c.mainImage) + '}\n';
+
+            /* ---- ตัวอักษร / เคอร์เซอร์ / scrollbar ---- */
+            const ff = (k) => THEME_FONTS[k] ? "'" + THEME_FONTS[k][1] + "','Prompt','Kanit',sans-serif" : '';
+            if (c.font) css += scope + '{font-family:' + ff(c.font) + ';}\n' + sel('button,input,select,textarea') + '{font-family:inherit;}\n';
+            if (c.titleFont && S.title) css += sel(S.title) + '{font-family:' + ff(c.titleFont) + ' !important;}\n';
+            if (c.pageTitle && S.title) css += sel(S.title) + '{color:' + c.pageTitle + ' !important;}\n';
+            if (c.titleFx && S.title) {
+                const t = sel(S.title);
+                if (c.titleFx === 'gradient') css += t + '{background:linear-gradient(90deg,' + acc + ',' + acc2 + ');-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent !important;}\n';
+                else if (c.titleFx === 'rainbow') css += t + '{background:linear-gradient(90deg,#ff5f6d,#ffc371,#47e891,#3fa7ff,#c471ed,#ff5f6d);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent !important;animation:thxRainbow 6s linear infinite;}\n';
+                else if (c.titleFx === 'shadow') css += t + '{text-shadow:3px 3px 0 ' + acc + ';}\n';
+                else if (c.titleFx === 'glow') css += t + '{text-shadow:0 0 8px ' + acc + ',0 0 22px ' + acc + ';}\n';
+                else if (c.titleFx === 'outline') css += t + '{text-shadow:-1.5px -1.5px 0 ' + acc + ',1.5px -1.5px 0 ' + acc + ',-1.5px 1.5px 0 ' + acc + ',1.5px 1.5px 0 ' + acc + ';}\n';
+            }
+            if (c.scrollTheme) css += scope + ' *{scrollbar-color:' + acc + ' ' + _rgba(c.bg, 0.4) + ';scrollbar-width:thin;}\n' + scope + ' ::-webkit-scrollbar{width:10px;height:10px;}\n' + scope + ' ::-webkit-scrollbar-thumb{background:' + acc + ';border-radius:99px;border:2px solid transparent;background-clip:padding-box;}\n' + scope + ' ::-webkit-scrollbar-track{background:' + _rgba(c.bg, 0.35) + ';}\n';
+            css += scope + ' ::selection{background:' + acc + ';color:' + v['--on-accent'] + ';}\n';
+            if (c.cursor) {
+                const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><text x='2' y='26' font-size='24'>" + c.cursor + "</text></svg>";
+                css += scope + ',' + sel('*') + '{cursor:url("data:image/svg+xml,' + encodeURIComponent(svg) + '") 4 4,auto !important;}\n';
+            }
+
+            /* ---- การ์ด ---- */
+            if (S.card) {
+                const cr = [], noImg = !c.cardImage, k = sel(S.card);
+                if (c.cardImage) cr.push(layer(c.cardOverlay / 100, '165deg', [c.card1, v['--card2']], c.cardImage));
+                if (c.radius >= 0) cr.push('border-radius:' + c.radius + 'px;');
+                if (c.cardBorder) cr.push('border-style:' + c.cardBorder + ';' + (c.cardBorder !== 'none' ? 'border-width:2px;' : ''));
+                const st = c.cardStyle;
+                if (st === 'glass') { const b = c.glassBlur || 14; if (noImg) cr.push('background:' + (L ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.08)') + ' !important;'); cr.push('backdrop-filter:blur(' + b + 'px);-webkit-backdrop-filter:blur(' + b + 'px);border:1px solid ' + (L ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.22)') + ' !important;'); }
+                else if (st === 'flat') { if (noImg) cr.push('background:' + c.card1 + ' !important;'); cr.push('box-shadow:none !important;border-color:transparent !important;'); }
+                else if (st === 'neon') { if (noImg) cr.push('background:' + _mix(c.card1, '#000000', 0.35) + ' !important;'); cr.push('border:2px solid ' + acc + ' !important;box-shadow:0 0 14px ' + A(0.7) + ',inset 0 0 14px ' + A(0.22) + ' !important;'); }
+                else if (st === 'paper') { if (noImg) cr.push('background-color:' + c.card1 + ' !important;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 23px,' + A(0.16) + ' 23px,' + A(0.16) + ' 24px) !important;'); cr.push('border-left:5px solid ' + acc + ' !important;'); }
+                else if (st === 'sticker') { cr.push('border:3px solid ' + c.strong + ' !important;box-shadow:5px 5px 0 ' + acc + ' !important;'); }
+                if (noImg) { /* พื้นการ์ดจาง / สีปลายไล่เอง */
+                    const ca = c.cardAlpha / 100;
+                    if (st === 'flat' && ca < 1) cr.push('background:' + _rgba(c.card1, ca) + ' !important;');
+                    else if (st === 'neon' && ca < 1) cr.push('background:' + _rgba(_mix(c.card1, '#000000', 0.35), ca) + ' !important;');
+                    else if (st === 'paper' && ca < 1) cr.push('background-color:' + _rgba(c.card1, ca) + ' !important;');
+                    else if ((st === '' || st === 'sticker') && (ca < 1 || c.card2)) cr.push('background:linear-gradient(165deg,' + _rgba(c.card1, ca) + ',' + _rgba(c.card2 || v['--card2'], ca) + ') !important;');
+                }
+                if (c.cardBorderColor) cr.push('border-color:' + c.cardBorderColor + ' !important;');
+                if (c.cardBorderW > 0) cr.push('border-width:' + c.cardBorderW + 'px !important;border-style:' + (c.cardBorder && c.cardBorder !== 'none' ? c.cardBorder : 'solid') + ' !important;');
+                if (c.cardShadow > 0 && ['flat', 'neon', 'sticker'].indexOf(st) === -1) cr.push('box-shadow:0 ' + Math.round(c.cardShadow / 5) + 'px ' + Math.round(c.cardShadow / 1.4) + 'px ' + _rgba(c.cardShadowColor || '#000000', (c.cardShadow / 220).toFixed(2)) + ';');
+                if (c.glow) cr.push('box-shadow:0 0 18px rgba(' + v['--accent-rgb'] + ',0.35);');
+                if (c.cardHover) cr.push('transition:transform .22s,box-shadow .22s;');
+                if (cr.length) css += k + '{' + cr.join('') + '}\n';
+                if (c.cardHover === 'lift') css += selp(S.card, ':hover') + '{transform:translateY(-6px);}\n';
+                else if (c.cardHover === 'tilt') css += selp(S.card, ':hover') + '{transform:rotate(-1.6deg) scale(1.025);}\n';
+                else if (c.cardHover === 'glow') css += selp(S.card, ':hover') + '{box-shadow:0 0 24px ' + A(0.7) + ' !important;}\n';
+                else if (c.cardHover === 'bounce') css += selp(S.card, ':hover') + '{animation:thxBounce .55s ease;}\n';
+                else if (c.cardHover === 'zoom') css += selp(S.card, ':hover') + '{transform:scale(1.04);}\n';
+                if (c.cardText) css += k + '{color:' + c.cardText + ' !important;}\n';
+                if (c.cardTitle) css += sub(S.card, 'b,strong,h1,h2,h3,h4,h5') + '{color:' + c.cardTitle + ' !important;}\n';
+            }
+            if (S.main && c.radius >= 0) css += sel(S.main) + '{border-radius:' + Math.min(c.radius + 4, 36) + 'px;}\n';
+            if (S.tile) {
+                const tr = [];
+                if (c.radius >= 0) tr.push('border-radius:' + c.radius + 'px;');
+                if (c.cardHover) tr.push('transition:transform .2s;');
+                if (tr.length) css += sel(S.tile) + '{' + tr.join('') + '}\n';
+                if (c.cardHover) css += selp(S.tile, ':hover') + '{transform:translateY(-4px);}\n';
+            }
+
+            /* ---- ความโปร่งใส / เบลอ / สีเสริม / สีตัวอักษรของแถบและกล่องหลัก ---- */
+            if (S.nav) {
+                const r = [];
+                if (c.navAlpha < 100 && !c.navImage) r.push('background:linear-gradient(135deg,' + _rgba(c.nav1, c.navAlpha / 100) + ',' + _rgba(c.nav2, c.navAlpha / 100) + ') !important;');
+                if (c.navBlur > 0) r.push(blurCss(c.navBlur));
+                if (c.navText) r.push('color:' + c.navText + ' !important;');
+                if (r.length) css += sel(S.nav) + '{' + r.join('') + '}\n';
+            }
+            if (S.side) {
+                const r = [], sb = c.sideBg || c.nav2;
+                if (!c.sideImage && (c.sideAlpha < 100 || c.sideBg)) r.push('background:' + (c.sideAlpha < 100 ? _rgba(sb, c.sideAlpha / 100) : sb) + ' !important;');
+                if (c.sideBlur > 0) r.push(blurCss(c.sideBlur));
+                if (c.sideText) r.push('color:' + c.sideText + ' !important;');
+                if (r.length) css += sel(S.side) + '{' + r.join('') + '}\n';
+            }
+            if (S.main) {
+                const r = [];
+                if (c.mainAlpha < 100 && !c.mainImage) r.push('background:' + _rgba(c.surface, c.mainAlpha / 100) + ' !important;');
+                if (c.mainBlur > 0) r.push(blurCss(c.mainBlur));
+                if (c.lineColor) r.push('border-color:' + c.lineColor + ' !important;');
+                if (r.length) css += sel(S.main) + '{' + r.join('') + '}\n';
+            }
+            /* ---- สีละเอียด: ชื่อหน้า / กล่องข้อมูลผู้ใช้ / ปุ่มเมนู-กลับหน้าหลัก / หัวข้อแถบข้าง / ชื่อวิชา / ลิงก์ / ป้ายช่องกรอก ---- */
+            {
+                const mid = thNavMid(c), onNav = thOnNav(c), lightNav = _lum(mid) > 0.62;
+                if (S.navTitle && c.navTitle) css += sel(S.navTitle) + '{color:' + c.navTitle + ' !important;}\n';
+                if (S.user) {
+                    const r = [], ub = c.userBg || (lightNav ? 'rgba(15,23,42,0.06)' : ''), ul = c.userLine || (lightNav ? 'rgba(15,23,42,0.16)' : '');
+                    if (ub) r.push('background:' + ub + ' !important;');
+                    if (ul) r.push('border-color:' + ul + ' !important;');
+                    if (c.userSep) r.push('color:' + c.userSep + ' !important;');
+                    if (r.length) css += sel(S.user) + '{' + r.join('') + '}\n';
+                }
+                if (S.userLabel) { const lc = c.userLabel || (c.userSep ? onNav : ''); if (lc) css += sel(S.userLabel) + '{color:' + lc + ' !important;}\n'; }
+                if (S.userVal) css += sel(S.userVal) + '{color:' + thUserVal(c) + ' !important;}\n';
+                if (S.home) {
+                    const r = [], hb = c.homeBg || (lightNav ? 'rgba(15,23,42,0.08)' : '');
+                    if (hb) r.push('background:' + hb + ' !important;');
+                    if (lightNav && !c.homeBg) r.push('border-color:rgba(15,23,42,0.2) !important;');
+                    r.push('color:' + (c.homeText || onNav) + ' !important;');
+                    css += sel(S.home) + '{' + r.join('') + '}\n';
+                }
+                if (S.menu && (c.menuBg || c.menuText)) css += sel(S.menu) + '{' + (c.menuBg ? 'background:' + c.menuBg + ' !important;' : '') + (c.menuText ? 'color:' + c.menuText + ' !important;' : '') + '}\n';
+                if (S.sideHead && (c.sideTitle || c.sideText)) css += sel(S.sideHead) + '{color:' + (c.sideTitle || c.sideText) + ' !important;}\n';
+                if (S.sub && c.subject) css += sel(S.sub) + '{color:' + c.subject + ' !important;}\n';
+                if (S.lnk && c.linkText) css += sel(S.lnk) + '{color:' + c.linkText + ' !important;}\n';
+                if (S.lbl && c.label) css += sel(S.lbl) + '{color:' + c.label + ' !important;}\n';
+            }
+            if (c.textShadow) {
+                const X = L ? '#ffffff' : '#000000';
+                const tsh = { soft: L ? '0 1px 2px rgba(255,255,255,.8)' : '0 1px 3px rgba(0,0,0,.5)', strong: L ? '0 1px 3px #fff,0 0 6px rgba(255,255,255,.9)' : '0 2px 5px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.9)', glow: '0 0 6px ' + A(0.9) + ',0 0 14px ' + A(0.5), outline: '-1px -1px 0 ' + X + ',1px -1px 0 ' + X + ',-1px 1px 0 ' + X + ',1px 1px 0 ' + X }[c.textShadow];
+                ['nav', 'side', 'main', 'card', 'modal'].forEach(k => { if (S[k]) css += sel(S[k]) + '{text-shadow:' + tsh + ';}\n'; });
+                if (S.title && (c.titleFx === 'gradient' || c.titleFx === 'rainbow')) css += sel(S.title) + '{text-shadow:none;}\n';
+            }
+
+            /* ---- ปุ่ม ---- */
+            if (S.btn) {
+                const r = [], bc = c.btnColor || acc, bc2 = _mix(bc, '#000000', 0.18), on = _lum(bc) > 0.55 ? '#0f172a' : '#ffffff';
+                if (c.btnStyle === 'gradient') r.push('background:linear-gradient(135deg,' + _mix(bc, '#ffffff', 0.28) + ',' + bc2 + ') !important;color:' + on + ' !important;border-color:transparent !important;');
+                else if (c.btnStyle === 'outline') r.push('background:transparent !important;color:' + bc + ' !important;border:2px solid ' + bc + ' !important;');
+                else if (c.btnStyle === 'soft') r.push('background:' + _rgba(bc, 0.18) + ' !important;color:' + bc + ' !important;border:1px solid ' + _rgba(bc, 0.4) + ' !important;');
+                else if (c.btnStyle === 'glass') r.push('background:rgba(255,255,255,.14) !important;backdrop-filter:blur(8px);color:' + c.strong + ' !important;border:1px solid rgba(255,255,255,.35) !important;');
+                else if (c.btnColor) r.push('background:' + bc + ' !important;color:' + on + ' !important;');
+                if (c.btnColor2 && (!c.btnStyle || c.btnStyle === 'gradient')) r.push('background:linear-gradient(135deg,' + bc + ',' + c.btnColor2 + ') !important;color:' + on + ' !important;border-color:transparent !important;');
+                if (c.btnText) r.push('color:' + c.btnText + ' !important;');
+                if (c.btnRadius >= 0) r.push('border-radius:' + c.btnRadius + 'px !important;');
+                if (c.btnShadow === 'soft') r.push('box-shadow:0 6px 16px ' + _rgba(bc, 0.4) + ' !important;');
+                else if (c.btnShadow === 'glow') r.push('box-shadow:0 0 18px ' + bc + ',0 0 4px ' + bc + ' !important;');
+                else if (c.btnShadow === 'pop3d') r.push('box-shadow:0 5px 0 ' + bc2 + ',0 9px 16px rgba(0,0,0,.28) !important;');
+                if (r.length || c.btnHover) r.push('transition:transform .18s,box-shadow .18s,filter .18s;');
+                if (r.length) css += sel(S.btn) + '{' + r.join('') + '}\n';
+                const hv = selp(S.btn, ':hover:not(:disabled)');
+                if (c.btnHover === 'lift') css += hv + '{transform:translateY(-3px);filter:brightness(1.08);}\n';
+                else if (c.btnHover === 'pulse') css += hv + '{animation:thxPulse .8s ease-in-out infinite;}\n';
+                else if (c.btnHover === 'wiggle') css += hv + '{animation:thxWiggle .5s ease-in-out infinite;}\n';
+                else if (c.btnHover === 'shine') css += hv + '{animation:thxShine .9s ease-in-out infinite;}\n';
+                if (c.btnShadow === 'pop3d') css += selp(S.btn, ':active:not(:disabled)') + '{transform:translateY(4px);box-shadow:0 1px 0 ' + bc2 + ' !important;}\n';
+            }
+            /* ---- ช่องกรอก ---- */
+            if (S.input && c.inputStyle) {
+                const i = sel(S.input);
+                if (c.inputStyle === 'underline') css += i + '{border:0 !important;border-bottom:2px solid ' + acc + ' !important;border-radius:0 !important;background:transparent !important;}\n';
+                else if (c.inputStyle === 'pill') css += i + '{border-radius:999px !important;padding-left:18px !important;padding-right:18px !important;}\n';
+                else if (c.inputStyle === 'soft') css += i + '{background:' + A(0.1) + ' !important;border:1px solid transparent !important;}\n';
+                css += selp(S.input, ':focus') + '{outline:none !important;border-color:' + acc + ' !important;box-shadow:0 0 0 3px ' + A(0.28) + (c.inputStyle === 'glow' ? ',0 0 16px ' + A(0.6) : '') + ' !important;}\n';
+                if (c.inputStyle === 'glow') css += i + '{box-shadow:0 0 8px ' + A(0.35) + ';}\n';
+            }
+            if (S.input && (c.inputBg || c.inputAlpha < 100 || c.inputText || c.placeholder)) {
+                const r = [];
+                if (c.inputBg || c.inputAlpha < 100) {
+                    const ia = c.inputAlpha / 100, ib = c.inputBg || (L ? _mix(c.surface, c.text, 0.06) : '#000000');
+                    r.push('background:' + _rgba(ib, (c.inputBg || L) ? ia : 0.25 * ia) + ' !important;');
+                }
+                if (c.inputText) r.push('color:' + c.inputText + ' !important;');
+                if (r.length) css += sel(S.input) + '{' + r.join('') + '}\n';
+                if (c.placeholder) css += selp(S.input, '::placeholder') + '{color:' + c.placeholder + ' !important;opacity:1;}\n';
+            }
+            /* ---- หน้าต่าง (สร้างกล่องงาน / ส่งงาน) ---- */
+            if (S.modal) {
+                const m = sel(S.modal), r = [];
+                if (c.modalRadius >= 0) r.push('border-radius:' + c.modalRadius + 'px !important;');
+                if (c.modalBorder === 'solid') r.push('border:3px solid ' + acc + ' !important;');
+                else if (c.modalBorder === 'dashed') r.push('border:3px dashed ' + acc + ' !important;');
+                else if (c.modalBorder === 'dotted') r.push('border:4px dotted ' + acc + ' !important;');
+                else if (c.modalBorder === 'double') r.push('border:6px double ' + acc + ' !important;');
+                else if (c.modalBorder === 'neon') r.push('border:2px solid ' + acc + ' !important;box-shadow:0 0 26px ' + A(0.8) + ',inset 0 0 18px ' + A(0.25) + ' !important;');
+                if (c.modalGlow && c.modalBorder !== 'neon') r.push('box-shadow:0 0 34px ' + A(0.55) + ',0 20px 60px rgba(0,0,0,.45) !important;');
+                if (c.modalGlass) r.push('background:' + _rgba(c.modalBg || c.surface, 0.72) + ' !important;backdrop-filter:blur(' + (c.glassBlur || 14) + 'px);-webkit-backdrop-filter:blur(' + (c.glassBlur || 14) + 'px);');
+                if (c.modalAlpha < 100) r.push('background:' + _rgba(c.modalBg || c.surface, c.modalAlpha / 100) + ' !important;' + (!c.modalGlass && c.glassBlur > 0 ? blurCss(c.glassBlur) : ''));
+                else if (c.modalBg && !c.modalGlass) r.push('background:' + c.modalBg + ' !important;');
+                if (c.modalText) r.push('color:' + c.modalText + ' !important;');
+                if (c.lineColor && !c.modalBorder) r.push('border-color:' + c.lineColor + ' !important;');
+                const an = { pop: 'thxPop .45s cubic-bezier(.2,1.3,.4,1) both', slide: 'thxSlide .4s ease-out both', drop: 'thxDrop .8s ease-out both', zoom: 'thxZoom .35s ease-out both', flip: 'thxFlip .55s ease-out both' }[c.modalAnim];
+                if (an) r.push('animation:' + an + ';');
+                if (r.length) css += m + '{' + r.join('') + '}\n';
+                if (c.modalDeco) {
+                    const e = '"' + c.modalDeco + '"', base = 'position:absolute;font-size:38px;line-height:1;pointer-events:none;z-index:3;', p = c.modalDecoPos;
+                    css += selp(S.modal, '::before') + '{content:' + e + ';' + base + (p === 'tr' ? 'top:-16px;right:-8px;' : 'top:-16px;left:-8px;') + '}\n';
+                    if (p === 'top') css += selp(S.modal, '::after') + '{content:' + e + ';' + base + 'top:-16px;right:-8px;}\n';
+                    else if (p === 'diag') css += selp(S.modal, '::after') + '{content:' + e + ';' + base + 'bottom:-16px;right:-8px;}\n';
+                }
+            }
+            if (S.mtitle && c.modalHead) {
+                const t = sel(S.mtitle);
+                if (c.modalHead === 'gradient') css += t + '{background:linear-gradient(90deg,' + A(0.85) + ',transparent) !important;color:' + v['--on-accent'] + ' !important;padding:8px 14px !important;border-radius:12px !important;border-left:0 !important;}\n';
+                else if (c.modalHead === 'underline') css += t + '{border-left:0 !important;padding-left:0 !important;border-bottom:3px solid ' + acc + ' !important;padding-bottom:6px !important;}\n';
+                else if (c.modalHead === 'pill') css += t + '{display:inline-block !important;background:' + acc + ' !important;color:' + v['--on-accent'] + ' !important;border-left:0 !important;padding:6px 20px !important;border-radius:999px !important;}\n';
+            }
+            if (S.mtitle && c.modalTitle) css += sel(S.mtitle) + '{color:' + c.modalTitle + ' !important;}\n';
+            if (S.backdrop && (c.backdropColor || c.backdropBlur > 0)) {
+                const b = [];
+                if (c.backdropColor) b.push('background:' + _rgba(c.backdropColor, c.backdropOpacity / 100) + ' !important;');
+                if (c.backdropBlur > 0) b.push('backdrop-filter:blur(' + c.backdropBlur + 'px);-webkit-backdrop-filter:blur(' + c.backdropBlur + 'px);');
+                css += sel(S.backdrop) + '{' + b.join('') + '}\n';
+            }
+            if (S.drop && (c.dropStyle || c.dropAnim)) {
+                const d = [];
+                if (c.dropStyle === 'glow') d.push('border:2px dashed ' + acc + ' !important;box-shadow:0 0 18px ' + A(0.45) + ',inset 0 0 18px ' + A(0.12) + ' !important;');
+                else if (c.dropStyle) d.push('border:3px ' + c.dropStyle + ' ' + acc + ' !important;');
+                if (c.dropAnim === 'pulse') d.push('animation:thxDropPulse 1.8s ease-in-out infinite;');
+                else if (c.dropAnim === 'wiggle') d.push('animation:thxWobble 2.6s ease-in-out infinite;');
+                css += sel(S.drop) + '{' + d.join('') + '}\n';
+                css += '@keyframes thxDropPulse{0%,100%{box-shadow:0 0 0 0 ' + A(0.5) + '}50%{box-shadow:0 0 0 10px ' + A(0) + '}}\n';
+            }
+            /* ---- แอนิเมชันกลาง (ใช้ร่วมกัน) ---- */
+            css += '.anim-bounce{animation:thxBounce 1.1s ease-in-out infinite;}.anim-wiggle{animation:thxWiggle 1.2s ease-in-out infinite;}.anim-heart{animation:thxHeart 1.3s ease-in-out infinite;}.anim-swing{animation:thxSwing 2.4s ease-in-out infinite;transform-origin:50% 0;}.anim-tada{animation:thxTada 2.2s ease-in-out infinite;}.anim-shake{animation:thxShake .9s ease-in-out infinite;}.anim-rubber{animation:thxRubber 1.6s ease-in-out infinite;}.anim-flash{animation:thxFlash 1.6s ease-in-out infinite;}.anim-drift{animation:thxDrift 5s ease-in-out infinite;}\n' +
+                '@keyframes thxShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}\n' +
+                '@keyframes thxRubber{0%,100%{transform:scale(1,1)}30%{transform:scale(1.25,.75)}40%{transform:scale(.75,1.25)}50%{transform:scale(1.15,.85)}65%{transform:scale(.95,1.05)}75%{transform:scale(1.05,.95)}}\n' +
+                '@keyframes thxFlash{0%,50%,100%{opacity:1}25%,75%{opacity:.15}}\n' +
+                '@keyframes thxDrift{0%,100%{transform:translateX(-14px)}50%{transform:translateX(14px)}}\n' +
+                '@keyframes thxBounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-16px)}60%{transform:translateY(-6px)}}\n' +
+                '@keyframes thxWiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}\n' +
+                '@keyframes thxWobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-.7deg)}75%{transform:rotate(.7deg)}}\n' +
+                '@keyframes thxHeart{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(1)}45%{transform:scale(1.12)}60%{transform:scale(1)}}\n' +
+                '@keyframes thxSwing{0%,100%{transform:rotate(12deg)}50%{transform:rotate(-12deg)}}\n' +
+                '@keyframes thxTada{0%,70%,100%{transform:scale(1)}10%,20%{transform:scale(.9) rotate(-4deg)}30%,50%{transform:scale(1.12) rotate(4deg)}40%,60%{transform:scale(1.12) rotate(-4deg)}}\n' +
+                '@keyframes thxPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}\n' +
+                '@keyframes thxShine{0%,100%{filter:brightness(1)}40%{filter:brightness(1.4) saturate(1.3)}}\n' +
+                '@keyframes thxRainbow{to{background-position:300% 0}}\n' +
+                '@keyframes thxPop{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}\n' +
+                '@keyframes thxSlide{0%{transform:translateY(70px);opacity:0}100%{transform:none;opacity:1}}\n' +
+                '@keyframes thxDrop{0%{transform:translateY(-140px);opacity:0}50%{transform:translateY(0);opacity:1}65%{transform:translateY(-22px)}80%{transform:translateY(0)}90%{transform:translateY(-7px)}100%{transform:translateY(0)}}\n' +
+                '@keyframes thxZoom{0%{transform:scale(1.5);opacity:0}100%{transform:scale(1);opacity:1}}\n' +
+                '@keyframes thxFlip{0%{transform:perspective(900px) rotateX(-80deg);opacity:0}100%{transform:perspective(900px) rotateX(0);opacity:1}}\n' +
+                '@media (prefers-reduced-motion: reduce){' + scope + ' *{animation:none !important;transition:none !important;}}\n';
+            return css;
+        }
+
+        /* ---------- เครื่องมือเอฟเฟกต์ (Web Animations API) ---------- */
+        function _thxReduce() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+        function _thxAbs(host) { return !!(host && host.closest && host.closest('[data-thx-abs]')); }
+        function _thxRnd(i, n) { return (((i * 9301 + 49297) * (n + 7)) % 233280) / 233280; } // สุ่มคงที่ ตำแหน่งไม่เปลี่ยนทุกครั้งที่วาด
+        function _thxBox(abs, z) { const d = document.createElement('div'); d.style.cssText = 'position:' + (abs ? 'absolute' : 'fixed') + ';inset:0;overflow:hidden;pointer-events:none;z-index:' + z + ';'; return d; }
+        function _thxSize(host, abs) {
+            if (abs) { const r = host.closest('[data-thx-abs]'); return [r.offsetWidth, r.offsetHeight]; }
+            return [window.innerWidth, window.innerHeight];
+        }
+        function _thxAmbient(c, host, abs, reduce) {
+            if (!c.ambient) return;
+            const sz = _thxSize(host, abs), W = sz[0], H = sz[1], lv = c.ambientLevel / 100, acc = c.accent;
+            const box = _thxBox(abs, abs ? 0 : -1); box.className = 'thx-amb';
+            const go = (el, kf, o) => { if (!reduce && el.animate) el.animate(kf, Object.assign({ iterations: Infinity, easing: 'ease-in-out' }, o)); };
+            const h = _hsl(acc)[0];
+            if (c.ambient === 'aurora') {
+                const cols = [acc, c.nav1, c.bgGrad || _fromHsl(h + 60, 80, 60)];
+                cols.forEach((col, i) => {
+                    const d = document.createElement('div'), s = 55 + _thxRnd(i, 1) * 25;
+                    d.style.cssText = 'position:absolute;width:' + s + '%;height:' + s + '%;left:' + (_thxRnd(i, 2) * 60 - 10) + '%;top:' + (_thxRnd(i, 3) * 60 - 15) + '%;border-radius:50%;will-change:transform;filter:blur(40px);background:radial-gradient(circle,' + _rgba(col, Math.min(0.9, 0.7 * lv + 0.1)) + ' 0%,transparent 65%);';
+                    go(d, [{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(' + (i % 2 ? -14 : 14) + '%,' + (i === 1 ? 12 : -10) + '%) scale(1.25)' }], { duration: 15000 + i * 4500, direction: 'alternate' });
+                    box.appendChild(d);
+                });
+            } else if (c.ambient === 'stars') {
+                const n = Math.round(14 + lv * 36);
+                for (let i = 0; i < n; i++) {
+                    const s = document.createElement('span'); s.textContent = '✦';
+                    s.style.cssText = 'position:absolute;left:' + (_thxRnd(i, 1) * 98) + '%;top:' + (_thxRnd(i, 2) * 96) + '%;font-size:' + (6 + _thxRnd(i, 3) * 12) + 'px;color:' + c.strong + ';opacity:.2;';
+                    go(s, [{ opacity: 0.1 }, { opacity: 0.95 }, { opacity: 0.1 }], { duration: 1800 + _thxRnd(i, 4) * 3200, delay: -_thxRnd(i, 5) * 3000 });
+                    box.appendChild(s);
+                }
+            } else if (c.ambient === 'bokeh') {
+                const n = Math.round(8 + lv * 14);
+                for (let i = 0; i < n; i++) {
+                    const d = document.createElement('div'), s = 28 + _thxRnd(i, 1) * 90;
+                    d.style.cssText = 'position:absolute;left:' + (_thxRnd(i, 2) * 96) + '%;top:' + H + 'px;width:' + s + 'px;height:' + s + 'px;will-change:transform;border-radius:50%;background:' + _rgba(acc, 0.16) + ';border:1px solid ' + _rgba(acc, 0.3) + ';';
+                    go(d, [{ transform: 'translateY(0)', opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 1, offset: 0.85 }, { transform: 'translateY(' + (-(H + s + 40)) + 'px)', opacity: 0 }], { duration: 14000 + _thxRnd(i, 3) * 16000, delay: -_thxRnd(i, 4) * 20000, easing: 'linear' });
+                    box.appendChild(d);
+                }
+            } else if (c.ambient === 'fireflies') {
+                const n = Math.round(10 + lv * 20);
+                for (let i = 0; i < n; i++) {
+                    const d = document.createElement('div');
+                    d.style.cssText = 'position:absolute;left:' + (_thxRnd(i, 1) * 96) + '%;top:' + (_thxRnd(i, 2) * 94) + '%;width:6px;height:6px;will-change:transform,opacity;border-radius:50%;background:#fff3a0;box-shadow:0 0 8px 3px rgba(255,235,130,.7);';
+                    const dx = (_thxRnd(i, 3) - 0.5) * 160, dy = (_thxRnd(i, 4) - 0.5) * 160, dx2 = (_thxRnd(i, 5) - 0.5) * 160, dy2 = (_thxRnd(i, 6) - 0.5) * 160;
+                    go(d, [{ transform: 'translate(0,0)', opacity: 0.2 }, { transform: 'translate(' + dx + 'px,' + dy + 'px)', opacity: 1 }, { transform: 'translate(' + dx2 + 'px,' + dy2 + 'px)', opacity: 0.3 }, { transform: 'translate(0,0)', opacity: 0.2 }], { duration: 6000 + _thxRnd(i, 7) * 6000, delay: -_thxRnd(i, 8) * 8000 });
+                    box.appendChild(d);
+                }
+            }
+            host.appendChild(box);
+        }
+        function _thxFall(c, host, abs, reduce) {
+            if (!c.fall) return;
+            const sym = Array.from(c.fall), sz = _thxSize(host, abs), W = sz[0], H = sz[1];
+            /* 2 ชั้น: หน้า (ลอยเหนือกล่อง) / หลัง (อยู่หลังกล่องด้านหน้า เห็นผ่านช่องว่างและกล่องโปร่งใส) */
+            const mk = (back) => { const l = _thxBox(abs, back ? (abs ? 0 : -1) : (abs ? 5 : 550)); l.className = 'deco-fall-v4' + (back ? ' deco-fall-back' : ''); return l; };
+            let front = null, back = null;
+            const x1 = Math.min(c.fallX1, c.fallX2), x2 = Math.max(c.fallX1, c.fallX2);
+            const span = Math.max(0, (x2 - x1) / 100 * (W - 30));
+            const vr = c.fallSizeVar / 100;
+            for (let i = 0; i < c.fallCount; i++) {
+                const isBack = c.fallLayer === 'back' || (c.fallLayer === 'mix' && _thxRnd(i, 9) * 100 < c.fallBackPct);
+                let fl;
+                if (isBack) { if (!back) back = mk(true); fl = back; } else { if (!front) front = mk(false); fl = front; }
+                const x0 = Math.round(x1 / 100 * (W - 30) + _thxRnd(i, 1) * span);
+                const sizeK = (1 - vr * 0.4) + _thxRnd(i, 2) * vr * 0.8 + 0.0;
+                const px = Math.max(6, Math.round(c.fallSize * sizeK * (isBack && c.fallBackSmall ? 0.7 : 1)));
+                const op = (isBack ? c.fallBackOpacity : c.fallOpacity) / 100, bl = isBack ? Math.max(c.fallBlur, c.fallBackBlur) : c.fallBlur;
+                const p = document.createElement('span');
+                p.textContent = sym[i % sym.length];
+                p.style.cssText = 'position:absolute;top:0;left:' + x0 + 'px;line-height:1;will-change:transform;opacity:' + op + ';font-size:' + px + 'px;' +
+                    (bl > 0 ? 'filter:blur(' + bl + 'px);' : '') + (c.fallGlow ? 'text-shadow:0 0 8px ' + c.fallGlow + ',0 0 16px ' + c.fallGlow + ';' : '');
+                fl.appendChild(p);
+                if (reduce || !p.animate) continue;
+                const dur = c.fallSpeed * (0.7 + _thxRnd(i, 3) * 0.8) * 1000 * (isBack && c.fallBackSmall ? 1.25 : 1), delay = -_thxRnd(i, 4) * c.fallSpeed * 1000;
+                const y0 = c.fallDir === 'up' ? H + 40 : -40, y1 = c.fallDir === 'up' ? -40 : H + 40;
+                const drift = (c.fallDir === 'diag' ? W * 0.18 : 0) + W * c.fallWind / 100, spin = c.fallSpin ? (_thxRnd(i, 5) > 0.5 ? 360 : -360) : 0;
+                const kf = [];
+                for (let s = 0; s <= 6; s++) {
+                    const t = s / 6, sway = c.fallSway ? Math.sin(t * Math.PI * 3 + i) * 28 : 0;
+                    kf.push({ transform: 'translate(' + Math.round(drift * t + sway) + 'px,' + Math.round(y0 + (y1 - y0) * t) + 'px) rotate(' + Math.round(spin * t) + 'deg)', offset: t });
+                }
+                p.animate(kf, { duration: dur, delay: delay, iterations: Infinity, easing: 'linear' });
+            }
+            if (back) host.appendChild(back);
+            if (front) host.appendChild(front);
+        }
+        function _thxFrame(c, host, abs) {
+            if (!c.frame) return;
+            const col = c.frameColor || c.accent, w = c.frameWidth, f = _thxBox(abs, abs ? 7 : 580);
+            f.style.overflow = 'visible'; f.style.boxSizing = 'border-box';
+            if (c.frame === 'neon') f.style.cssText += 'border:' + Math.max(2, w - 2) + 'px solid ' + col + ';box-shadow:0 0 18px ' + col + ',inset 0 0 18px ' + col + ';';
+            else if (c.frame === 'double') f.style.cssText += 'border:' + Math.max(w, 4) + 'px double ' + col + ';';
+            else f.style.cssText += 'border:' + w + 'px ' + c.frame + ' ' + col + ';';
+            if (c.frameEmoji) {
+                [['top:4px;left:8px'], ['top:4px;right:8px'], ['bottom:4px;left:8px'], ['bottom:4px;right:8px']].forEach(p => {
+                    const e = document.createElement('span'); e.textContent = c.frameEmoji;
+                    e.style.cssText = 'position:absolute;font-size:' + (26 + w) + 'px;line-height:1;' + p[0] + ';';
+                    f.appendChild(e);
+                });
+            }
+            host.appendChild(f);
+        }
+        const THX_ANIM_BASE = { float: 3, sway: 2.6, spin: 12, pulse: 2, bounce: 1.1, wiggle: 1.2, heart: 1.3, swing: 2.4, tada: 2.2, shake: 0.9, rubber: 1.6, flash: 1.6, drift: 5 };
+        /* วางอิสระ: x,y เป็น % ของหน้า (จุดกึ่งกลางสติกเกอร์) */
+        function _thxFree(o, s) { o.style.width = s.size + 'px'; o.style.left = s.x + '%'; o.style.top = s.y + '%'; return 'translate(-50%,-50%)'; }
+        function _thxPlace(o, pos, off, w) {
+            const st = o.style, vv = pos.charAt(0), hh = pos.charAt(1), of = off + 'px';
+            st.width = w + 'px';
+            if (vv === 't') st.top = of; else if (vv === 'b') st.bottom = of; else st.top = '50%';
+            if (hh === 'l') st.left = of; else if (hh === 'r') st.right = of; else st.left = '50%';
+            return 'translate(' + (hh === 'c' ? '-50%' : '0') + ',' + (vv === 'm' ? '-50%' : '0') + ')';
+        }
+        /* ---------- วิดีโอ: ไฟล์ .mp4/.webm หรือ YouTube (เล่นอัตโนมัติแบบปิดเสียง) ---------- */
+        function _thxYt(u) { const m = String(u || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/))([\w-]{11})/); return m ? m[1] : ''; }
+        function _thxVidEl(v) {
+            const yt = _thxYt(v.url);
+            if (yt) {
+                const f = document.createElement('iframe');
+                f.src = 'https://www.youtube-nocookie.com/embed/' + yt + '?autoplay=1&mute=1&controls=0&playsinline=1&rel=0&modestbranding=1&disablekb=1&iv_load_policy=3' + (v.loop ? '&loop=1&playlist=' + yt : '');
+                f.setAttribute('allow', 'autoplay; encrypted-media'); f.setAttribute('tabindex', '-1'); f.setAttribute('title', 'video');
+                f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+                f.style.cssText = 'border:0;pointer-events:none;';
+                return f;
+            }
+            const e = document.createElement('video');
+            e.muted = true; e.defaultMuted = true; e.loop = !!v.loop; e.autoplay = true; e.playsInline = true; e.preload = 'auto';
+            e.setAttribute('muted', ''); e.setAttribute('playsinline', '');
+            e.src = v.url;
+            e.style.cssText = 'display:block;width:100%;height:100%;object-fit:' + v.fit + ';pointer-events:none;';
+            const sp = () => { try { e.playbackRate = v.speed; } catch (x) { } };
+            sp(); e.addEventListener('loadedmetadata', sp);
+            e.addEventListener('canplay', () => { const p = e.play(); if (p && p.catch) p.catch(() => { }); });
+            e.onerror = () => { e.style.display = 'none'; };
+            return e;
+        }
+        function _thxVideos(c, host, abs, reduce, phase) {
+            if (reduce) return;
+            (c.videos || []).forEach(v => {
+                if ((v.mode === 'bg') !== (phase === 'bg')) return;
+                const yt = _thxYt(v.url), el = _thxVidEl(v);
+                if (v.mode === 'bg') {
+                    const sz = _thxSize(host, abs), W = sz[0], H = sz[1];
+                    const box = _thxBox(abs, abs ? 0 : -1); box.className = 'thx-vid' + (v.hideMobile ? ' deco-hm' : ''); box.style.opacity = v.opacity / 100;
+                    if (yt) el.style.cssText += 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:' + (abs ? Math.max(W, H * 16 / 9) + 'px' : 'max(100vw,177.78vh)') + ';height:' + (abs ? Math.max(H, W * 9 / 16) + 'px' : 'max(100vh,56.25vw)') + ';';
+                    else el.style.cssText += 'position:absolute;inset:0;';
+                    box.appendChild(el);
+                    if (v.dim > 0) { const d = document.createElement('div'); d.style.cssText = 'position:absolute;inset:0;background:' + _rgba(c.bg, v.dim / 100) + ';'; box.appendChild(d); }
+                    host.appendChild(box);
+                    return;
+                }
+                const o = document.createElement('div');
+                o.className = 'deco-item deco-' + v.layer + (v.hideMobile ? ' deco-hm' : '');
+                o.style.transform = _thxPlace(o, v.pos, v.off, v.size);
+                const wrap = document.createElement('div'), circle = v.shape === 'circle';
+                wrap.style.cssText = 'position:relative;overflow:hidden;aspect-ratio:' + (circle ? '1 / 1' : v.ratio.replace(':', ' / ')) + ';border-radius:' + (circle ? '50%' : v.radius + 'px') + ';opacity:' + (v.opacity / 100) + ';background:#000;' +
+                    (v.shadow ? 'box-shadow:0 10px 26px rgba(0,0,0,.4);' : '') + (v.border ? 'border:3px solid ' + c.accent + ';box-sizing:border-box;' : '');
+                el.style.cssText += 'position:absolute;inset:0;width:100%;height:100%;';
+                wrap.appendChild(el); o.appendChild(wrap); host.appendChild(o);
+            });
+        }
+        /* วางสติกเกอร์ + วิดีโอ + ของตกลงมา + บรรยากาศ + กรอบ ลงใน host */
+        function renderDecor(c, host) {
+            if (!host) return;
+            host.innerHTML = '';
+            if (!c) return;
+            const abs = _thxAbs(host), reduce = _thxReduce();
+            _thxVideos(c, host, abs, reduce, 'bg');
+            _thxAmbient(c, host, abs, reduce);
+            (c.stickers || []).forEach(s => {
+                const o = document.createElement('div');
+                o.className = 'deco-item deco-' + s.layer + (s.hideMobile ? ' deco-hm' : '');
+                o.style.transform = (s.pos === 'free' ? _thxFree(o, s) : _thxPlace(o, s.pos, s.off, s.size)) + (s.rotate ? ' rotate(' + s.rotate + 'deg)' : '') + (s.flip ? ' scaleX(-1)' : '');
+                const inner = document.createElement('div');
+                inner.className = 'deco-inner anim-' + s.anim;
+                inner.style.opacity = s.opacity / 100;
+                const fl = [];
+                if (s.shadow) fl.push('drop-shadow(0 6px 8px rgba(0,0,0,.35))');
+                if (s.glowC) fl.push('drop-shadow(0 0 ' + s.glowSize + 'px ' + s.glowC + ')');
+                if (s.hue) fl.push('hue-rotate(' + s.hue + 'deg)');
+                if (s.gray) fl.push('grayscale(' + s.gray + '%)');
+                if (s.bright !== 100) fl.push('brightness(' + s.bright + '%)');
+                if (s.blur) fl.push('blur(' + s.blur + 'px)');
+                if (fl.length) inner.style.filter = fl.join(' ');
+                if (s.speed !== 1 && THX_ANIM_BASE[s.anim]) inner.style.animationDuration = (THX_ANIM_BASE[s.anim] / s.speed).toFixed(2) + 's';
+                if (s.delay > 0) inner.style.animationDelay = s.delay + 's';
+                if (s.url) {
+                    const img = document.createElement('img');
+                    img.src = s.url; img.alt = '';
+                    if (s.round > 0) img.style.borderRadius = s.round + '%';
+                    img.onerror = function () { inner.style.display = 'none'; };
+                    inner.appendChild(img);
+                } else {
+                    const e = document.createElement('div');
+                    e.className = 'deco-emoji'; e.textContent = s.emoji; e.style.fontSize = s.size + 'px';
+                    inner.appendChild(e);
+                }
+                if (s.text) {
+                    const b = document.createElement('div'); b.className = 'deco-bubble'; b.textContent = s.text;
+                    if (s.bubbleBg) b.style.background = s.bubbleBg;
+                    if (s.bubbleText) b.style.color = s.bubbleText;
+                    inner.appendChild(b);
+                }
+                o.appendChild(inner);
+                host.appendChild(o);
+            });
+            _thxVideos(c, host, abs, reduce, 'box');
+            _thxFall(c, host, abs, reduce);
+            _thxFrame(c, host, abs);
+        }
+
+        /* ---------- ฉลองความสำเร็จ + เอฟเฟกต์เมาส์ ---------- */
+        function _thxLayer(root) {
+            const abs = !!(root && root.hasAttribute && root.hasAttribute('data-thx-abs'));
+            const L = _thxBox(abs, abs ? 30 : 9999);
+            (abs ? root : document.body).appendChild(L);
+            return { L: L, abs: abs, W: abs ? root.offsetWidth : window.innerWidth, H: abs ? root.offsetHeight : window.innerHeight };
+        }
+        function _thxPt(root, e) {
+            if (root && root.hasAttribute && root.hasAttribute('data-thx-abs')) { const r = root.getBoundingClientRect(), k = (r.width / root.offsetWidth) || 1; return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; }
+            return [e.clientX, e.clientY];
+        }
+        function _thxFly(L, ch, x, y, o) {
+            const p = document.createElement('div');
+            p.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;line-height:1;will-change:transform,opacity;';
+            if (o.color) { p.style.background = o.color; p.style.width = o.w + 'px'; p.style.height = o.h + 'px'; p.style.borderRadius = o.round ? '50%' : '2px'; }
+            else { p.textContent = ch; p.style.fontSize = o.size + 'px'; }
+            L.appendChild(p);
+            if (!p.animate) { setTimeout(() => p.remove(), 800); return; }
+            const T = (k, s) => 'translate(-50%,-50%) translate(' + Math.round(o.dx * k) + 'px,' + Math.round(o.dy * k + (s || 0)) + 'px) rotate(' + Math.round(o.rot * k) + 'deg) scale(' + (0.6 + 0.4 * Math.min(1, k * 2)) + ')';
+            const a = p.animate([{ transform: T(0), opacity: 1 }, { transform: T(0.55), opacity: 1, offset: 0.45 }, { transform: T(1, o.grav), opacity: 0 }], { duration: o.dur, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' });
+            a.onfinish = () => p.remove();
+        }
+        function themeCelebrate(c, root, which) {
+            if (!c) return;
+            const T = _thxLayer(root), L = T.L, W = T.W, H = T.H, reduce = _thxReduce();
+            const hs = _hsl(c.accent)[0];
+            const pal = [c.accent, c.strong, _mix(c.accent, '#ffffff', 0.5), _fromHsl(hs + 40, 80, 60), _fromHsl(hs - 40, 80, 60), _fromHsl(hs + 160, 75, 62)];
+            const em = Array.from(c.celebEmoji || ''), R = (a, b) => a + Math.random() * (b - a);
+            const piece = (x, y, ang, sp, grav, big) => {
+                const useEm = em.length && (c.celebrate !== 'confetti' || Math.random() < 0.35);
+                const o = { dx: Math.cos(ang) * sp, dy: Math.sin(ang) * sp, grav: grav, rot: R(-360, 360), dur: R(1200, 2200) };
+                if (useEm) { o.size = Math.round(R(big ? 22 : 16, big ? 38 : 28)); _thxFly(L, em[Math.floor(Math.random() * em.length)], x, y, o); }
+                else { o.color = pal[Math.floor(Math.random() * pal.length)]; o.round = c.celebrate === 'fireworks'; o.w = Math.round(o.round ? R(5, 8) : R(6, 11)); o.h = Math.round(o.round ? o.w : R(8, 15)); _thxFly(L, '', x, y, o); }
+            };
+            const n = c.celebCount, M = Math.min(W, H);
+            if (!reduce && c.celebrate) {
+                if (c.celebrate === 'confetti') { for (let i = 0; i < n; i++) { const left = i % 2 === 0; piece(left ? W * 0.06 : W * 0.94, H * 0.96, -Math.PI / 2 + (left ? 1 : -1) * R(0.05, 0.85), R(0.35, 0.95) * H * 0.85, H * 0.55, false); } }
+                else if (c.celebrate === 'burst') { for (let i = 0; i < n; i++) piece(W / 2, H * 0.45, R(0, 6.283), R(0.12, 0.5) * M * 1.1, R(30, 110), true); }
+                else if (c.celebrate === 'rain') { for (let i = 0; i < n; i++) setTimeout(() => piece(R(0, W), -20, Math.PI / 2 + R(-0.15, 0.15), H * R(0.95, 1.2), 0, true), i * 35); }
+                else if (c.celebrate === 'fireworks') { [[0.25, 0.35, 0], [0.75, 0.3, 380], [0.5, 0.5, 760]].forEach(f => setTimeout(() => { for (let i = 0; i < Math.max(8, Math.round(n / 3)); i++) piece(W * f[0], H * f[1], R(0, 6.283), R(0.1, 0.3) * M * 1.1, R(20, 70), false); }, f[2])); }
+            }
+            const msg = which === 'create' ? c.celebText2 : c.celebText;
+            if (msg) {
+                const t = document.createElement('div'); t.textContent = msg;
+                t.style.cssText = 'position:absolute;top:22px;left:50%;transform:translateX(-50%);background:' + c.accent + ';color:' + (_lum(c.accent) > 0.55 ? '#0f172a' : '#ffffff') + ';padding:10px 24px;border-radius:999px;font-weight:700;font-size:' + (T.abs ? 20 : 16) + 'px;box-shadow:0 10px 28px rgba(0,0,0,.35);white-space:nowrap;font-family:inherit;';
+                L.appendChild(t);
+                if (t.animate && !reduce) t.animate([{ transform: 'translate(-50%,-60px)', opacity: 0 }, { transform: 'translate(-50%,0)', opacity: 1, offset: 0.15 }, { transform: 'translate(-50%,0)', opacity: 1, offset: 0.85 }, { transform: 'translate(-50%,-20px)', opacity: 0 }], { duration: 2900, fill: 'forwards' });
+                else setTimeout(() => t.remove(), 2900);
+            }
+            setTimeout(() => L.remove(), 5200);
+        }
+        /* ผูกเอฟเฟกต์คลิก / รอยเมาส์ (root = null → ทั้งหน้า) */
+        function themeBindFx(c, root) {
+            const tg = root || document;
+            if (tg.__thx) { tg.removeEventListener('pointerdown', tg.__thx.d); tg.removeEventListener('pointermove', tg.__thx.m); if (tg.__thx.L) tg.__thx.L.remove(); tg.__thx = null; }
+            if (!c || (!c.clickFx && !c.trail) || _thxReduce()) return;
+            const st = { L: null }, R = (a, b) => a + Math.random() * (b - a), tr = Array.from(c.trail || '');
+            const lay = () => { if (!st.L || !st.L.isConnected) st.L = _thxLayer(root).L; return st.L; };
+            let last = 0;
+            st.d = function (e) {
+                if (!c.clickFx) return;
+                const L = lay(), p = _thxPt(root, e), x = p[0], y = p[1];
+                if (c.clickFx === 'ripple') {
+                    const d = document.createElement('div'); d.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:3px solid ' + c.accent + ';';
+                    L.appendChild(d); if (d.animate) d.animate([{ transform: 'scale(.5)', opacity: 0.9 }, { transform: 'scale(4.5)', opacity: 0 }], { duration: 650, easing: 'ease-out' }).onfinish = () => d.remove(); else d.remove();
+                } else {
+                    const k = c.clickFx;
+                    for (let i = 0; i < (k === 'hearts' ? 5 : (k === 'confetti' ? 10 : 7)); i++) {
+                        const a = k === 'hearts' ? -Math.PI / 2 + R(-0.8, 0.8) : R(0, 6.283), sp = k === 'hearts' ? R(50, 100) : R(36, 80);
+                        const o = { dx: Math.cos(a) * sp, dy: Math.sin(a) * sp, grav: k === 'hearts' ? -20 : 25, rot: R(-120, 120), dur: R(600, 950) };
+                        if (k === 'confetti') { o.color = [c.accent, c.strong, _mix(c.accent, '#ffffff', 0.5)][i % 3]; o.w = 6; o.h = 9; _thxFly(L, '', x, y, o); }
+                        else { o.size = Math.round(R(14, 22)); _thxFly(L, k === 'hearts' ? ['💖', '💗', '💕'][i % 3] : ['✨', '⭐'][i % 2], x, y, o); }
+                    }
+                }
+            };
+            st.m = function (e) {
+                if (!tr.length) return;
+                const now = Date.now(); if (now - last < 45) return; last = now;
+                const p = _thxPt(root, e);
+                _thxFly(lay(), tr[Math.floor(Math.random() * tr.length)], p[0], p[1], { size: Math.round(R(12, 20)), dx: R(-14, 14), dy: R(10, 34), grav: 10, rot: R(-60, 60), dur: R(650, 1000) });
+            };
+            tg.addEventListener('pointerdown', st.d, { passive: true }); tg.addEventListener('pointermove', st.m, { passive: true });
+            tg.__thx = { d: st.d, m: st.m, get L() { return st.L; } };
+        }
+        function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        (function () {
+            const paused = new Set();
+            document.addEventListener('visibilitychange', function () {
+                if (!document.getAnimations) return;
+                if (document.hidden) {
+                    document.getAnimations().forEach(a => { if (a.playState === 'running') { try { a.pause(); paused.add(a); } catch (e) {} } });
+                } else {
+                    paused.forEach(a => { try { a.play(); } catch (e) {} });
+                    paused.clear();
+                }
+            });
+        })();
+        /* ============================ THEME ENGINE v4 END ============================ */
+        themeDecorConfig('student', [['detail-modal', 'submit']]);
+
+        /* ===== ฉลองความสำเร็จตามธีมที่ใช้อยู่ (เรียกหลังบันทึก/ส่งงานสำเร็จ) =====
+           which = 'create' (สร้างกล่องงาน → celebText2) | 'submit' (ส่งงาน → celebText)
+           ถ้าธีมไม่ได้ตั้งเอฟเฟกต์/ข้อความฉลองไว้ จะแสดงข้อความ fallbackMsg (alert) เหมือนเดิม */
+        function thxCelebrate(which, fallbackMsg) {
+            let c = null;
+            try {
+                const st = SHOP_THEMES.find(t => t.id === document.documentElement.getAttribute('data-theme'));
+                c = st ? st.config : null;
+            } catch (e) {}
+            const txt = c ? (which === 'create' ? c.celebText2 : c.celebText) : '';
+            if (c && (c.celebrate || txt)) {
+                try { themeCelebrate(c, null, which); } catch (e) {}
+                if (fallbackMsg && !txt) setTimeout(() => alert(fallbackMsg), 2300);
+                return true;
+            }
+            if (fallbackMsg) alert(fallbackMsg);
+            return false;
+        }
+
+        function setShopThemes(list) {
+            SHOP_THEMES = (Array.isArray(list) ? list : []).filter(t => t && /^shop-[\w-]+$/.test(t.id) && t.name)
+                .map(t => ({ id: t.id, name: String(t.name), price: String(t.price || 'ฟรี'), config: cleanCfg(t.config) }));
+            let st = document.getElementById('shop-theme-style');
+            if (!st) { st = document.createElement('style'); st.id = 'shop-theme-style'; document.head.appendChild(st); }
+            st.textContent = SHOP_THEMES.map(t => themeCss('html[data-theme="' + t.id + '"]', t.config, THEME_SEL)).join('\n');
+        }
+        function getThemeStorageKey() {
+            try {
+                const u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+                const k = u && (u.studentCode || u.userCode || u.studentId || u.email);
+                if (k) return 'theme_student_' + k;
+            } catch (e) {}
+            return null;
+        }
+        function getSavedTheme() {
+            const k = getThemeStorageKey();
+            let id = null;
+            try { id = k ? localStorage.getItem(k) : null; } catch (e) {}
+            return (THEMES.some(t => t.id === id) || /^shop-[\w-]+$/.test(id || '')) ? id : 'default';
+        }
+        function applyTheme(id, save) {
+            if (!/^shop-[\w-]+$/.test(id || '') && !THEMES.some(t => t.id === id)) id = 'default';
+            document.documentElement.setAttribute('data-theme', id);
+            if (save) {
+                const k = getThemeStorageKey();
+                if (k) { try { localStorage.setItem(k, id); } catch (e) {} }
+                if (typeof saveThemeToCloud === 'function') saveThemeToCloud(id);   // ล็อกธีมลงชีต
+            }
+            document.querySelectorAll('.theme-item').forEach(el => el.classList.toggle('selected', el.dataset.theme === id));
+            const st = SHOP_THEMES.find(t => t.id === id);
+            themeDecorApply(st ? st.config : null, true);
+            applyThemeFont(st ? st.config : null);
+            themeBindFx(st ? st.config : null, null);
+        }
+        function themeCard(t, shop) {
+            const tags = shop
+                ? '<div class="theme-tagrow"><span class="theme-price' + (t.price === 'ฟรี' ? ' free' : '') + '">' + esc(t.price) + '</span>' + (t.badge ? '<span class="theme-badge">' + esc(t.badge) + '</span>' : '') + '</div>' + (t.tagline ? '<div class="theme-tagline">' + esc(t.tagline) + '</div>' : '')
+                : '';
+            const thumb = t.thumb ? 'background-image:url(&quot;' + esc(t.thumb) + '&quot;);background-size:cover;background-position:center;' : '';
+            return '<button type="button" class="theme-item" data-theme="' + t.id + '" onclick="applyTheme(\'' + t.id + '\', true)">'
+                + '<span class="theme-check">✓</span>'
+                + '<div class="theme-swatch" style="background-color:' + t.bg + ';' + thumb + '"><div class="sw-nav" style="background:' + t.nav + '"></div><div class="sw-dot" style="background:' + t.accent + '"></div></div>'
+                + esc(t.name) + tags + '</button>';
+        }
+        function renderThemePicker() {
+            const grid = document.getElementById('theme-grid');
+            if (!grid) return;
+            grid.innerHTML = THEMES.map(t => themeCard(t, false)).join('');
+            const sg = document.getElementById('shop-grid'), st = document.getElementById('shop-title');
+            if (sg && st) {
+                sg.innerHTML = SHOP_THEMES.map(t => themeCard({ id: t.id, name: t.name, nav: t.config.nav1, bg: t.config.bg, accent: t.config.accent, price: t.price, badge: t.config.badge, tagline: t.config.tagline, thumb: t.config.bgImage || t.config.mainImage || t.config.navImage || t.config.cardImage }, true)).join('');
+                st.classList.toggle('hidden', SHOP_THEMES.length === 0);
+                sg.classList.toggle('hidden', SHOP_THEMES.length === 0);
+            }
+            applyTheme(document.documentElement.getAttribute('data-theme') || 'default', false);
+        }
+        function toggleThemePanel(force) {
+            const d = document.getElementById('theme-drawer'), b = document.getElementById('btn-theme-menu');
+            if (!d) return;
+            const open = (typeof force === 'boolean') ? force : !d.classList.contains('open');
+            d.classList.toggle('open', open);
+            if (b) b.classList.toggle('open', open);
+        }
+        async function loadShopThemes() {
+            try {
+                const res = await fetch(THEME_API + '?action=get_themes&t=' + Date.now());
+                const r = await res.json();
+                if (r.status !== 'success' || !Array.isArray(r.themes)) return;
+                const list = r.themes.map(t => ({ id: 'shop-' + t.id, name: t.name, price: t.price, config: t.config }));
+                try { localStorage.setItem(SHOP_CACHE_KEY, JSON.stringify(list)); } catch (e) {}
+                setShopThemes(list);
+                renderThemePicker();
+                // ธีมที่เคยเลือกถูกลบ/ซ่อนโดย admin -> กลับเป็นธีมเริ่มต้น
+                const cur = document.documentElement.getAttribute('data-theme') || '';
+                if (/^shop-/.test(cur) && !SHOP_THEMES.some(t => t.id === cur)) applyTheme('default', true);
+            } catch (e) { /* ออฟไลน์: ใช้ธีมจากแคชต่อไป */ }
+        }
+        // ใช้ธีมทันทีก่อนหน้าเว็บวาด เพื่อไม่ให้เห็นสีเดิมแวบหนึ่ง
+        try { setShopThemes(JSON.parse(localStorage.getItem(SHOP_CACHE_KEY) || '[]')); } catch (e) {}
+        applyTheme(getSavedTheme(), false);
+        document.addEventListener('DOMContentLoaded', () => { renderThemePicker(); loadShopThemes(); });
+    </script>
+</head>
+<body>
+    <div id="theme-deco"></div>
+
+    <!-- iOS Style Loading Overlay -->
+    <div id="pageLoadingOverlay" class="loading-overlay-ios">
+        <div class="loading-box-ios">
+            <div class="ios-spinner">
+                <div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>
+            </div>
+            <span>กำลังโหลดข้อมูล...</span>
+        </div>
+    </div>
+
+    <!-- Modal ป๊อปอัพระบุ ห้อง และ เลขที่ สำหรับผู้ใช้ใหม่ / studata -->
+    <div id="studata-modal" class="modal-overlay hidden" style="z-index: 10500;">
+        <div class="studata-box">
+            <h3 id="studata-title" style="font-size: 20px; font-weight: 700; color: #ff9f43; text-align: center;">📋 ยืนยันและระบุข้อมูลเพิ่มเติม</h3>
+            <p style="font-size: 13px; color: #cbd5e0; text-align: center; margin-top: 4px;">กรุณาตรวจสอบความถูกต้องของข้อมูล และระบุห้องพร้อมเลขที่</p>
+            
+            <div class="studata-info">
+                <div><b>ชื่อ-นามสกุล:</b> <span id="stu-check-name">-</span></div>
+                <div><b>สถาบัน:</b> <span id="stu-check-inst">-</span></div>
+                <div><b>ระดับชั้น:</b> <span id="stu-check-level">-</span></div>
+                <div><b>แผนกวิชา:</b> <span id="stu-check-dept">-</span></div>
+            </div>
+
+            <div class="studata-field">
+                <label>ห้อง (เลือกจากรายการ):</label>
+                <select id="stu-input-room"><option value="">-- เลื่อนเพื่อเลือกห้อง --</option></select>
+            </div>
+
+            <div class="studata-field">
+                <label>เลขที่ (เช่น 01, 15):</label>
+                <input type="text" id="stu-input-no" placeholder="กรอกเลขที่ของคุณ">
+            </div>
+
+            <button id="btn-save-studata" class="btn-save-studata" onclick="saveStudataInfo()">💾 ยืนยันบันทึกข้อมูล</button>
+            <button id="btn-cancel-studata" class="btn-cancel-studata hidden" onclick="closeStudataModal()">ยกเลิก</button>
+        </div>
+    </div>
+
+    <div id="auth-alert" class="overlay hidden">
+        <div class="popup">
+            <h3>ปฏิเสธการเข้าถึง!</h3>
+            <p>กรุณาเข้าสู่ระบบนักเรียนก่อนใช้งานค่ะ</p>
+            <button onclick="window.location.href='index.html'">ไปหน้าหลัก</button>
+        </div>
+    </div>
+
+    <!-- Background Overlay สำหรับสไลด์เมนู -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
+
+    <!-- Sidebar Drawer เมนูด้านข้างนักเรียน -->
+    <div id="sidebar-drawer" class="sidebar-drawer">
+        <div class="sidebar-header">
+            <h3>📂 เมนูส่วนตัว</h3>
+            <button class="btn-close-sidebar" onclick="closeSidebar()">✕</button>
+        </div>
+        <div class="sidebar-content">
+            <a id="gdrive-user-link" href="https://drive.google.com" target="_blank" class="btn-gdrive-link">
+                <span style="font-size: 20px;">📁</span> Google Drive ของฉัน
+            </a>
+            <p style="font-size: 12px; color: #a0aec0; margin-top: 12px; line-height: 1.5;">*ระบบจะล็อกเปิดเฉพาะ Google Drive บัญชี Gmail ของคุณล่วงหน้าให้อัตโนมัติ*</p>
+            <a href="submission-history.html" class="btn-gdrive-link" style="margin-top: 12px;">
+                <span style="font-size: 20px;">🕘</span> ประวัติการส่งงาน
+            </a>
+            <button type="button" class="btn-edit-studata" onclick="openEditStudata()">
+                <span style="font-size: 20px;">✏️</span> แก้ไขข้อมูลห้อง / เลขที่
+            </button>
+            <button type="button" id="btn-theme-menu" class="btn-theme-menu" onclick="toggleThemePanel()">
+                <span style="font-size: 20px;">🎨</span> Theme <span class="theme-arrow">›</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- แถบ Theme: สไลด์ออกจากข้างเมนู -->
+    <div id="theme-drawer" class="theme-drawer">
+        <div class="theme-drawer-header">
+            <h3>🎨 เลือก Theme</h3>
+            <button class="btn-close-sidebar" onclick="toggleThemePanel(false)">✕</button>
+        </div>
+        <div class="theme-drawer-body">
+                <div id="theme-grid" class="theme-grid"></div>
+                <div id="shop-title" class="theme-section-title hidden">🛍️ ร้านธีม (ออกแบบโดยผู้ดูแลระบบ)</div>
+                <div id="shop-grid" class="theme-grid hidden"></div>
+                <div class="theme-note">ธีมที่เลือกจะถูกบันทึกเฉพาะบัญชีของคุณ</div>
+        </div>
+    </div>
+
+    <div id="student-content" class="hidden">
+        <nav class="navbar">
+            <h1>
+                <button class="btn-sidebar-toggle" onclick="openSidebar()">☰ เมนู</button>
+                ระบบนักเรียน (Student Portal)
+            </h1>
+            <div class="user-info">
+                <div>
+                    <strong>ผู้ใช้งาน:</strong> <span id="display-name">-</span> | 
+                    <strong>ระดับชั้น:</strong> <span id="display-class">-</span> | 
+                    <strong>Gmail:</strong> <span id="display-no">-</span>
+                </div>
+                <button class="btn-home" onclick="goHome()">กลับไปหน้าหลัก</button>
+            </div>
+        </nav>
+
+        <main class="main-container">
+            <h2>กล่องงานและกิจกรรมที่ได้รับมอบหมาย</h2>
+            <hr style="margin: 18px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.08);">
+            
+            <div id="student-cards-container" class="cards-grid"></div>
+        </main>
+    </div>
+
+    <!-- Modal แสดงรายละเอียดงานสไตล์ Social Post -->
+    <div id="detail-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <!-- ส่วนโพสต์สไตล์ Social Media -->
+            <div class="social-post-preview">
+                <div class="social-post-header">
+                    <!-- รูปโปรไฟล์ครู (แสดงแบบไม่ค้างรูปเก่า) -->
+                    <img id="modal-teacher-avatar-img" class="social-avatar hidden" src="" alt="Teacher Avatar">
+                    <div id="modal-teacher-avatar-fallback" class="social-avatar">👩‍🏫</div>
+                    <div>
+                        <div id="modal-social-subject" class="social-author-info">ชื่อวิชา</div>
+                        <div class="social-time">โพสต์โดยครูผู้สอน • 🌍 สาธารณะ</div>
+                    </div>
+                </div>
+                <h3 id="modal-social-title" style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #ff9f43;">หัวข้อเรื่อง / ชื่องาน</h3>
+                <div id="modal-social-desc" class="social-text">รายละเอียดงานทั้งหมดจะแสดงที่นี่...</div>
+                
+                <!-- แกลเลอรีรูปภาพประกอบ -->
+                <div id="modal-social-gallery">
+                    <span style="font-size: 11px; color: #a0aec0; grid-column: 1/-1;">ยังไม่มีรูปภาพประกอบ</span>
+                </div>
+
+                <!-- ลิงก์ดาวน์โหลดงาน PDF -->
+                <div id="modal-social-downloads" class="card-link-box" style="margin-top: 10px;">
+                    <span class="card-no-link" style="font-size: 11px; padding: 6px 10px;">⚠️ ยังไม่ได้แนบลิงก์ดาวน์โหลดงาน</span>
+                </div>
+            </div>
+            
+            <!-- ส่วนส่งงาน 3 รูปแบบ -->
+            <div id="task-closed-banner" class="closed-banner hidden"></div>
+            <div id="task-deadline-note" class="deadline-note hidden"></div>
+
+            <div class="submit-section" id="submit-section">
+                <div class="submit-title">📤 เลือกรูปแบบการส่งงาน</div>
+
+                <div class="submit-tabs">
+                    <button type="button" class="submit-tab active" id="tab-image" onclick="switchSubmitTab('image')">
+                        <span class="tab-ico">🖼️</span><span class="tab-name">รูปภาพ</span><span class="tab-hint">PNG / JPG</span>
+                    </button>
+                    <button type="button" class="submit-tab" id="tab-doc" onclick="switchSubmitTab('doc')">
+                        <span class="tab-ico">📄</span><span class="tab-name">ไฟล์เอกสาร</span><span class="tab-hint">PDF / Word / PPT</span>
+                    </button>
+                    <button type="button" class="submit-tab" id="tab-link" onclick="switchSubmitTab('link')">
+                        <span class="tab-ico">🔗</span><span class="tab-name">แนบลิงก์</span><span class="tab-hint">Google Drive</span>
+                    </button>
+                </div>
+
+                <!-- แท็บ 1: รูปภาพ -->
+                <div id="panel-image" class="submit-panel">
+                    <label for="work-image-input" class="dropzone">
+                        <span class="dz-ico">📷</span>
+                        <span>เลือกรูปภาพ / ถ่ายรูปส่งงาน</span>
+                        <span class="dz-sub">รองรับ PNG, JPG (ระบบย่อรูปให้อัตโนมัติ)</span>
+                    </label>
+                    <input type="file" id="work-image-input" accept="image/*" class="hidden" onchange="handleWorkImagePick(this)">
+                    <div id="work-image-preview-box" class="work-image-preview-box hidden">
+                        <button type="button" class="btn-remove-work-image" onclick="clearWorkImage()" title="ลบรูป">✕</button>
+                        <img id="work-image-preview" src="" alt="Preview">
+                        <div id="work-image-info" class="work-image-info"></div>
+                    </div>
+                    <div class="submit-note">รูปจะถูกเก็บลง Google Drive ของครู และแสดงในชีตตรวจงาน</div>
+                </div>
+
+                <!-- แท็บ 2: ไฟล์เอกสาร -->
+                <div id="panel-doc" class="submit-panel hidden">
+                    <label for="work-doc-input" id="work-doc-dropzone" class="dropzone" ondragover="docDragOver(event)" ondragleave="docDragLeave(event)" ondrop="docDrop(event)">
+                        <span class="dz-ico">📎</span>
+                        <span>แตะเพื่อเลือกไฟล์ หรือลากไฟล์มาวางที่นี่</span>
+                        <span class="dz-sub">PDF, Word, PowerPoint, Excel • ขนาดไม่เกิน 10 MB</span>
+                    </label>
+                    <input type="file" id="work-doc-input" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx" class="hidden" onchange="handleWorkDocPick(this)">
+                    <div id="work-doc-chip" class="work-doc-chip hidden">
+                        <span class="doc-ico" id="work-doc-ico">📄</span>
+                        <div class="doc-meta">
+                            <div class="doc-name" id="work-doc-name">-</div>
+                            <div class="doc-size" id="work-doc-size">-</div>
+                        </div>
+                        <button type="button" class="doc-remove" onclick="clearWorkDoc()" title="ลบไฟล์">✕</button>
+                    </div>
+                    <div class="submit-note">ไฟล์จะถูกเก็บลง Google Drive ของครู และบันทึกลิงก์ลงชีตตรวจงาน</div>
+                </div>
+
+                <!-- แท็บ 3: แนบลิงก์ -->
+                <div id="panel-link" class="submit-panel hidden">
+                    <button type="button" class="btn-drive-picker" onclick="openGoogleDrivePicker()">
+                        <span>📂 เปิด Google Drive ของฉัน</span>
+                    </button>
+                    <input type="url" id="selected-drive-file" placeholder="วางลิงก์ไฟล์งานที่นี่ (https://...)" style="width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; font-size: 14px; background: rgba(0,0,0,0.3); color: #fff; outline: none;">
+                    <div class="link-help">
+                        💡 วิธีคัดลอกลิงก์: คลิกขวาที่ไฟล์ใน Google Drive → <b>แชร์</b> → ตั้งสิทธิ์เป็น <b>"ทุกคนที่มีลิงก์"</b> → <b>คัดลอกลิงก์</b> แล้วนำมาวางในช่องด้านบน
+                    </div>
+                </div>
+
+                <button class="btn-submit-work" onclick="submitWork()">📤 ยืนยันการส่งงาน</button>
+            </div>
+
+            <button class="btn-close" onclick="closeDetailModal()">ปิดหน้าต่างนี้</button>
+        </div>
+    </div>
+
+    <script>
+        // ===== ตัวช่วยเรียก Apps Script: อ่านผลได้จริง + หมดเวลาเมื่อเน็ตหลุด =====
+        async function postJSON(url, payload, timeoutMs = 30000) {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+          try {
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ห้ามใช้ application/json กับ Apps Script
+              body: JSON.stringify(payload),
+              signal: ctrl.signal
+            });
+            const text = await res.text();
+            try {
+              return JSON.parse(text);
+            } catch (e) {
+              throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ตรวจสอบการ Deploy Apps Script)');
+            }
+          } catch (err) {
+            if (err.name === 'AbortError') throw new Error('การเชื่อมต่อหมดเวลา กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่');
+            throw err;
+          } finally {
+            clearTimeout(timer);
+          }
+        }
+
+        function ensureOk(result, fallbackMsg) {
+          if (!result || result.status !== 'success') {
+            throw new Error((result && result.message) || fallbackMsg || 'ดำเนินการไม่สำเร็จ');
+          }
+          return result;
+        }
+
+        // ===== ล็อกธีมไว้ในชีต (Studata คอลัมน์ I) =====
+        let _themeSaveTimer = null;
+        let _themeTouched = false;
+
+        function getThemeCloudKey() {
+            try {
+                const u = JSON.parse(sessionStorage.getItem('loggedInUser') || 'null');
+                return String((u && (u.studentCode || u.userCode || u.studentId || u.email)) || '').trim();
+            } catch (e) { return ''; }
+        }
+
+        function saveThemeToCloud(id) {
+            _themeTouched = true;
+            clearTimeout(_themeSaveTimer);
+            _themeSaveTimer = setTimeout(async () => {
+                const key = getThemeCloudKey();
+                if (!key) return;
+                try {
+                    await postJSON(BACKEND_URL, { action: 'save_theme_pref', role: 'student', userKey: key, theme: id }, 30000);
+                } catch (e) { /* ออฟไลน์: ยังมีค่าในเครื่อง จะซิงก์ตอนเลือกครั้งต่อไป */ }
+            }, 600);
+        }
+
+        async function loadThemeFromCloud() {
+            const key = getThemeCloudKey();
+            if (!key) return;
+            try {
+                const res = await fetch(`${BACKEND_URL}?action=get_theme_pref&role=student&identifier=${encodeURIComponent(key)}&t=${Date.now()}`);
+                const r = await res.json();
+                if (!r || r.status !== 'success' || _themeTouched) return;   // เพิ่งกดเลือกเองระหว่างรอ ไม่ต้องทับ
+
+                if (r.theme) {
+                    const k = getThemeStorageKey();
+                    if (k) { try { localStorage.setItem(k, r.theme); } catch (e) {} }
+                    if (document.documentElement.getAttribute('data-theme') !== r.theme) applyTheme(r.theme, false);
+                } else if (r.found) {
+                    // ในชีตยังไม่มีธีม แต่เครื่องนี้เคยเลือกไว้ -> อัปขึ้นชีต
+                    const local = getSavedTheme();
+                    if (local && local !== 'default') saveThemeToCloud(local);
+                }
+            } catch (e) {}
+        }
+
+        let globalTasks = [];
+        let studentClass = ""; 
+        let studentName = "";
+        let studentCode = "";
+        let studentEmail = "";
+        let studentNo = "";
+        let studentRoom = "";
+        let studentInstitution = "";
+        let studentDepartment = "";
+        let currentTask = null;
+        let lastTaskHash = "";
+        let currentUserObj = null;
+
+        // ระบบแคชรูปโปรไฟล์ครูในหน่วยความจำ + localStorage เพื่อให้เปิดดูปุ๊บ รูปขึ้นทันที
+        let teacherAvatarCache = {};
+        try {
+            const savedAvatars = localStorage.getItem("cached_teacher_avatars_v1");
+            if (savedAvatars) teacherAvatarCache = JSON.parse(savedAvatars);
+        } catch(e) {}
+
+        function saveAvatarCache() {
+            try {
+                localStorage.setItem("cached_teacher_avatars_v1", JSON.stringify(teacherAvatarCache));
+            } catch(e) {}
+        }
+
+        // โหลดรูปโปรไฟล์ครูทั้งหมดล่วงหน้าแบบ Background
+        async function preloadTeacherAvatars(tasks) {
+            if (!Array.isArray(tasks)) return;
+            const uniqueTeachers = [...new Set(tasks.map(t => t.teacherUser).filter(Boolean))];
+            
+            await Promise.all(uniqueTeachers.map(async (teacherUser) => {
+                if (teacherAvatarCache[teacherUser]) return; // มีในแคชแล้วข้ามเลย
+                try {
+                    const res = await fetch(`${BACKEND_URL}?action=get_user_profile&role=teacher&identifier=${encodeURIComponent(teacherUser)}&t=${new Date().getTime()}`);
+                    const data = await res.json();
+                    if (data && data.status === 'success' && data.user && data.user.avatar) {
+                        teacherAvatarCache[teacherUser] = data.user.avatar;
+                        saveAvatarCache();
+                        // กรณีนักเรียนเปิดหน้าต่างค้างอยู่พอดี ให้สลับรูปขึ้นให้ทันที
+                        if (currentTask && currentTask.teacherUser === teacherUser) {
+                            setModalTeacherAvatar(data.user.avatar);
+                        }
+                    }
+                } catch(e) {}
+            }));
+        }
+
+        function setModalTeacherAvatar(avatarUrl) {
+            const imgEl = document.getElementById('modal-teacher-avatar-img');
+            const fallbackEl = document.getElementById('modal-teacher-avatar-fallback');
+            if (avatarUrl) {
+                imgEl.src = avatarUrl;
+                imgEl.classList.remove('hidden');
+                fallbackEl.classList.add('hidden');
+            } else {
+                imgEl.src = "";
+                imgEl.classList.add('hidden');
+                fallbackEl.classList.remove('hidden');
+            }
+        }
+
+        function hideLoadingOverlay() {
+            const overlay = document.getElementById('pageLoadingOverlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        function openSidebar() {
+            document.getElementById('sidebar-drawer').classList.add('open');
+            document.getElementById('sidebar-overlay').classList.add('show');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebar-drawer').classList.remove('open');
+            if (typeof toggleThemePanel === 'function') toggleThemePanel(false);
+            document.getElementById('sidebar-overlay').classList.remove('show');
+        }
+
+        function cleanClassName(str) {
+            if (!str) return "";
+            return str.replace(/\./g, "").replace(/\s+/g, "").trim();
+        }
+
+        async function checkAuth() {
+            const sessionData = sessionStorage.getItem("loggedInUser");
+
+            if (!sessionData) {
+                hideLoadingOverlay();
+                document.getElementById('auth-alert').classList.remove('hidden');
+                document.getElementById('student-content').classList.add('hidden');
+            } else {
+                currentUserObj = JSON.parse(sessionData);
+                studentClass = currentUserObj.className || currentUserObj.classroom || currentUserObj.studentLevel || currentUserObj.level || ""; 
+                studentName = currentUserObj.fullName || currentUserObj.name || "-";
+                studentCode = currentUserObj.studentCode || currentUserObj.userCode || currentUserObj.studentId || "";
+                studentEmail = currentUserObj.email || "";
+                studentNo = currentUserObj.no || currentUserObj.studentNo || "";
+                studentRoom = currentUserObj.room || currentUserObj.studentRoom || "";
+                studentInstitution = currentUserObj.institution || currentUserObj.school || "วิทยาลัยอาชีวศึกษาชุมพร";
+                studentDepartment = currentUserObj.department || currentUserObj.dept || "";
+
+                document.getElementById('display-name').innerText = studentName;
+                document.getElementById('display-class').innerText = studentClass ? (studentClass + (studentRoom ? '/' + studentRoom : '')) : "-";
+                document.getElementById('display-no').innerText = `${studentCode || studentEmail} ${studentNo ? '/ เลขที่ ' + studentNo : ''}`;
+                
+                const driveBtn = document.getElementById('gdrive-user-link');
+                if (studentEmail && studentEmail.includes('@')) {
+                    driveBtn.href = `https://drive.google.com/drive/u/0/?authuser=${encodeURIComponent(studentEmail)}`;
+                } else {
+                    driveBtn.href = "https://drive.google.com";
+                }
+
+                document.getElementById('student-content').classList.remove('hidden');
+                loadThemeFromCloud();
+
+                const userKey = studentCode || studentEmail;
+                let needsStudataInput = false;
+
+                if (!studentRoom || !studentNo) {
+                    try {
+                        const resCheck = await fetch(`${BACKEND_URL}?action=check_studata&identifier=${encodeURIComponent(userKey)}&t=${new Date().getTime()}`);
+                        const dataCheck = await resCheck.json();
+                        if (dataCheck && dataCheck.exists) {
+                            studentRoom = dataCheck.room;
+                            studentNo = dataCheck.studentNo;
+                            if (dataCheck.studentLevel) {
+                                studentClass = dataCheck.studentLevel;
+                                currentUserObj.studentLevel = studentClass;
+                                currentUserObj.className = studentClass;
+                                currentUserObj.classroom = studentClass;
+                                currentUserObj.level = studentClass;
+                            }
+                            currentUserObj.room = studentRoom;
+                            currentUserObj.studentRoom = studentRoom;
+                            currentUserObj.no = studentNo;
+                            currentUserObj.studentNo = studentNo;
+                            sessionStorage.setItem("loggedInUser", JSON.stringify(currentUserObj));
+
+                            document.getElementById('display-class').innerText = studentClass ? (studentClass + (studentRoom ? '/' + studentRoom : '')) : "-";
+                            document.getElementById('display-no').innerText = `${studentCode || studentEmail} ${studentNo ? '/ เลขที่ ' + studentNo : ''}`;
+                        } else {
+                            needsStudataInput = true;
+                        }
+                    } catch(e) {
+                        needsStudataInput = true;
+                    }
+                }
+
+                if (needsStudataInput) {
+                    if (!studentDepartment) {
+                        const keys = [studentCode, studentEmail].filter(Boolean);
+                        for (const k of keys) {
+                            try {
+                                const resProf = await fetch(`${BACKEND_URL}?action=get_user_profile&role=student&identifier=${encodeURIComponent(k)}&t=${new Date().getTime()}`);
+                                const dataProf = await resProf.json();
+                                if (dataProf && dataProf.status === 'success' && dataProf.user && dataProf.user.department) {
+                                    studentDepartment = String(dataProf.user.department).trim();
+                                    currentUserObj.department = studentDepartment;
+                                    sessionStorage.setItem("loggedInUser", JSON.stringify(currentUserObj));
+                                    break;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+                    document.getElementById('stu-check-name').innerText = studentName;
+                    document.getElementById('stu-check-inst').innerText = studentInstitution || '-';
+                    document.getElementById('stu-check-level').innerText = studentClass || '-';
+                    document.getElementById('stu-check-dept').innerText = studentDepartment || '-';
+                    document.getElementById('studata-modal').classList.remove('hidden');
+                    loadRoomOptions(studentRoom || '');
+                }
+                
+                const cachedTasks = localStorage.getItem("cached_student_tasks_v2");
+                if (cachedTasks) {
+                    try {
+                        globalTasks = JSON.parse(cachedTasks);
+                        lastTaskHash = cachedTasks;
+                        renderStudentCards();
+                        preloadTeacherAvatars(globalTasks);
+                    } catch(e) {}
+                }
+
+                try {
+                    await fetchTasksRealtime();
+                } catch(e) {
+                } finally {
+                    hideLoadingOverlay();
+                }
+            }
+        }
+
+        let gradesCache = null;
+        async function loadRoomOptions(selectedRoom) {
+            const sel = document.getElementById('stu-input-room');
+            sel.innerHTML = '';
+            const loadingOpt = document.createElement('option');
+            loadingOpt.value = '';
+            loadingOpt.textContent = '⏳ กำลังโหลดรายการห้อง...';
+            sel.appendChild(loadingOpt);
+
+            let grades = gradesCache;
+            if (!grades) {
+                try {
+                    const res = await fetch(`${BACKEND_URL}?action=get_grades&t=${new Date().getTime()}`);
+                    const data = await res.json();
+                    if (data && data.status === 'success' && Array.isArray(data.grades)) {
+                        grades = data.grades.map(g => String(g.grade || '').trim()).filter(Boolean);
+                        gradesCache = grades;
+                    }
+                } catch(e) {}
+            }
+            grades = grades || [];
+
+            const myLevel = cleanClassName(studentClass);
+            const list = myLevel
+                ? grades.filter(g => cleanClassName(String(g).split('/')[0]) === myLevel)
+                : grades;
+
+            sel.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = '-- เลื่อนเพื่อเลือกห้อง --';
+            sel.appendChild(placeholder);
+
+            const seen = new Set();
+            list.forEach(g => {
+                if (seen.has(g)) return;
+                seen.add(g);
+                const opt = document.createElement('option');
+                opt.value = g;         
+                opt.textContent = g;
+                sel.appendChild(opt);
+            });
+
+            if (selectedRoom) {
+                const opts = Array.from(sel.options).filter(o => o.value && o.value.slice(o.value.lastIndexOf('/') + 1).trim() === String(selectedRoom).trim());
+                const match = opts.find(o => cleanClassName(o.value.split('/')[0]) === cleanClassName(studentClass)) || opts[0];
+                if (match) {
+                    sel.value = match.value;
+                } else {
+                    const keep = document.createElement('option');
+                    keep.value = String(selectedRoom);
+                    keep.textContent = `${selectedRoom} (ค่าเดิม)`;
+                    sel.appendChild(keep);
+                    sel.value = keep.value;
+                }
+            } else {
+                sel.value = '';
+            }
+        }
+
+        function closeStudataModal() {
+            document.getElementById('studata-modal').classList.add('hidden');
+            document.getElementById('btn-cancel-studata').classList.add('hidden');
+            document.getElementById('studata-title').innerText = "📋 ยืนยันและระบุข้อมูลเพิ่มเติม";
+        }
+
+        async function openEditStudata() {
+            closeSidebar();
+            document.getElementById('studata-title').innerText = "✏️ แก้ไขข้อมูลส่วนตัว";
+            document.getElementById('stu-check-name').innerText = studentName || '-';
+            document.getElementById('stu-check-inst').innerText = studentInstitution || '-';
+            document.getElementById('stu-check-level').innerText = studentClass || '-';
+            document.getElementById('stu-check-dept').innerText = studentDepartment || '-';
+            loadRoomOptions(studentRoom || '');
+            document.getElementById('stu-input-no').value = studentNo || '';
+            document.getElementById('btn-cancel-studata').classList.remove('hidden');
+            document.getElementById('studata-modal').classList.remove('hidden');
+
+            if (!studentDepartment) {
+                for (const k of [studentCode, studentEmail].filter(Boolean)) {
+                    try {
+                        const r = await fetch(`${BACKEND_URL}?action=get_user_profile&role=student&identifier=${encodeURIComponent(k)}&t=${new Date().getTime()}`);
+                        const d = await r.json();
+                        if (d && d.status === 'success' && d.user && d.user.department) {
+                            studentDepartment = String(d.user.department).trim();
+                            if (currentUserObj) {
+                                currentUserObj.department = studentDepartment;
+                                sessionStorage.setItem("loggedInUser", JSON.stringify(currentUserObj));
+                            }
+                            document.getElementById('stu-check-dept').innerText = studentDepartment;
+                            break;
+                        }
+                    } catch(e) {}
+                }
+            }
+        }
+
+        async function saveStudataInfo() {
+            const roomRaw = document.getElementById('stu-input-room').value.trim();
+            const roomVal = roomRaw.indexOf('/') > -1 ? roomRaw.slice(roomRaw.lastIndexOf('/') + 1).trim() : roomRaw;
+            const levelVal = roomRaw.indexOf('/') > -1 ? roomRaw.slice(0, roomRaw.lastIndexOf('/')).trim() : studentClass;
+            const noVal = document.getElementById('stu-input-no').value.trim();
+
+            if (!roomVal || !noVal) {
+                alert("กรุณากรอกข้อมูลห้อง และ เลขที่ ให้ครบถ้วนค่ะ");
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-studata');
+            btn.disabled = true;
+            btn.innerText = "⏳ กำลังบันทึกข้อมูล...";
+
+            const userKey = studentCode || studentEmail;
+            const payload = {
+                action: 'save_studata',
+                userCode: userKey,
+                fullName: studentName,
+                institution: studentInstitution,
+                studentLevel: levelVal,
+                department: studentDepartment,
+                room: roomVal,
+                studentNo: noVal,
+                theme: document.documentElement.getAttribute('data-theme') || 'default'
+            };
+
+            try {
+                ensureOk(await postJSON(BACKEND_URL, payload), 'บันทึกข้อมูลไม่สำเร็จ');
+
+                studentRoom = roomVal;
+                studentNo = noVal;
+                studentClass = levelVal || studentClass;
+
+                if (currentUserObj) {
+                    currentUserObj.studentLevel = studentClass;
+                    currentUserObj.className = studentClass;
+                    currentUserObj.classroom = studentClass;
+                    currentUserObj.level = studentClass;
+                    currentUserObj.room = studentRoom;
+                    currentUserObj.studentRoom = studentRoom;
+                    currentUserObj.no = studentNo;
+                    currentUserObj.studentNo = studentNo;
+                    sessionStorage.setItem("loggedInUser", JSON.stringify(currentUserObj));
+                }
+
+                document.getElementById('display-class').innerText = studentClass ? (studentClass + (studentRoom ? '/' + studentRoom : '')) : "-";
+                document.getElementById('display-no').innerText = `${studentCode || studentEmail} ${studentNo ? '/ เลขที่ ' + studentNo : ''}`;
+                document.getElementById('stu-check-level').innerText = studentClass || '-';
+                lastTaskHash = "";
+                fetchTasksRealtime();
+
+                alert("บันทึกข้อมูลห้องและเลขที่ลงชีต studata เรียบร้อยแล้วค่ะ!");
+                closeStudataModal();
+            } catch (e) {
+                alert("บันทึกไม่สำเร็จ: " + (e.message || 'กรุณาลองใหม่อีกครั้ง'));
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "💾 ยืนยันบันทึกข้อมูล";
+            }
+        }
+
+        function thaiToArabicDigits(s) {
+            return String(s || "").replace(/[๐-๙]/g, d => String("๐๑๒๓๔๕๖๗๘๙".indexOf(d)));
+        }
+        function normKey(s) {
+            return thaiToArabicDigits(s).replace(/[.\s]/g, "").toLowerCase();
+        }
+        function normRoom(s) {
+            let k = thaiToArabicDigits(s).replace(/ห้องที่|ห้อง/g, "").replace(/\s/g, "");
+            if (k.indexOf("/") !== -1) k = k.split("/").pop();
+            return /^\d+$/.test(k) ? String(parseInt(k, 10)) : k.toLowerCase();
+        }
+        function parseClassStr(str) {
+            let s = thaiToArabicDigits(str).trim();
+            if (!s) return { level: "", room: "" };
+            s = s.replace(/ห้องที่|ห้อง/g, "/").replace(/\s*\/\s*/g, "/");
+            const m = s.match(/^([^\d\/]*?)\s*(\d+)(?:\s*\/\s*(\d+)|\s+(\d+))?/);
+            if (!m) return { level: normKey(s), room: "" };
+            return { level: normKey(m[1] + m[2]), room: normRoom(m[3] || m[4] || "") };
+        }
+        function normDept(s) {
+            return String(s || "").replace(/\s/g, "")
+                .replace(/^(แผนกวิชา|แผนก|สาขาวิชา|สาขางาน|สาขา)/, "").toLowerCase();
+        }
+        function deptMatches(a, b) {
+            const x = normDept(a), y = normDept(b);
+            if (!x || !y) return false;
+            if (x === y) return true;
+            return Math.min(x.length, y.length) >= 4 && (x.indexOf(y) !== -1 || y.indexOf(x) !== -1);
+        }
+
+        // ===== เวลาปิดรับงาน / สิ้นสุดการรับงาน =====
+        let serverSkew = 0;                       // ส่วนต่างระหว่างเวลาเซิร์ฟเวอร์กับเครื่องนักเรียน
+        function nowMs() { return Date.now() + serverSkew; }
+
+        function deadlineToMs(str) {
+            const v = String(str || '').trim();
+            if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(v)) return null;
+            const ms = new Date(v.substring(0, 16) + ':00+07:00').getTime();
+            return isNaN(ms) ? null : ms;
+        }
+
+        function formatDeadlineTh(str) {
+            const ms = deadlineToMs(str);
+            if (ms === null) return '';
+            return new Date(ms).toLocaleString('th-TH', {
+                timeZone: 'Asia/Bangkok', weekday: 'short', day: 'numeric', month: 'long', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }) + ' น.';
+        }
+
+        function studentCloseState(task) {
+            if (!task) return { closed: false, reason: '' };
+            if (task._forceClosed) return { closed: true, reason: task._forceClosed };
+            if (task.closed === true || String(task.closed || '').toLowerCase() === 'true' || String(task.closed || '').toUpperCase() === 'CLOSED') {
+                return { closed: true, reason: 'teacher' };
+            }
+            const ms = deadlineToMs(task.deadline);
+            if (ms !== null && nowMs() >= ms) return { closed: true, reason: 'deadline' };
+            return { closed: false, reason: '' };
+        }
+
+        function closedMessage(task, reason) {
+            return reason === 'deadline'
+                ? `หมดเวลาส่งงานแล้ว (ปิดรับเมื่อ ${formatDeadlineTh(task && task.deadline)}) ไม่สามารถส่งงานได้ค่ะ`
+                : 'ครูสิ้นสุดการรับงานชิ้นนี้แล้ว ไม่สามารถส่งงานได้ค่ะ';
+        }
+
+        function formatRemaining(ms) {
+            if (ms <= 0) return '0 นาที';
+            const totalMin = Math.floor(ms / 60000);
+            const d = Math.floor(totalMin / 1440);
+            const h = Math.floor((totalMin % 1440) / 60);
+            const m = totalMin % 60;
+            let out = '';
+            if (d) out += d + ' วัน ';
+            if (d || h) out += h + ' ชม. ';
+            out += m + ' นาที';
+            return out;
+        }
+
+        // อัปเดตส่วนส่งงานในหน้าต่างรายละเอียด: ปิดรับ -> ซ่อนฟอร์ม / ยังเปิด -> แสดงเวลานับถอยหลัง
+        function applyTaskStatusToModal() {
+            if (!currentTask) return;
+            const sec = document.getElementById('submit-section');
+            const banner = document.getElementById('task-closed-banner');
+            const note = document.getElementById('task-deadline-note');
+            if (!sec || !banner || !note) return;
+
+            const st = studentCloseState(currentTask);
+            if (st.closed) {
+                sec.classList.add('hidden');
+                note.classList.add('hidden');
+                banner.classList.remove('hidden');
+                banner.innerHTML = (st.reason === 'deadline' ? '⏰ หมดเวลาส่งงานแล้ว' : '🔒 ครูสิ้นสุดการรับงานแล้ว')
+                    + '<br><span style="font-weight:500;font-size:13px;">' + closedMessage(currentTask, st.reason) + '</span>';
+            } else {
+                banner.classList.add('hidden');
+                sec.classList.remove('hidden');
+                const ms = deadlineToMs(currentTask.deadline);
+                if (ms !== null) {
+                    note.classList.remove('hidden');
+                    note.innerHTML = '⏰ ปิดรับงาน: ' + formatDeadlineTh(currentTask.deadline)
+                        + '<br><span style="font-weight:500;">เหลือเวลาอีก ' + formatRemaining(ms - nowMs()) + '</span>';
+                } else {
+                    note.classList.add('hidden');
+                }
+            }
+        }
+
+        // ถามเซิร์ฟเวอร์ก่อนส่งงานทุกครั้ง (กันกรณีครูเพิ่งปิดรับงาน)
+        async function verifyTaskStillOpen(task) {
+            try {
+                const res = await fetch(`${BACKEND_URL}?action=check_task_status&taskId=${encodeURIComponent(task.id || '')}&link=${encodeURIComponent(task.link || '')}&t=${new Date().getTime()}`);
+                const d = await res.json();
+                if (d && d.status === 'success') {
+                    if (d.serverNow) serverSkew = Number(d.serverNow) - Date.now();
+                    return { closed: !!d.closed, reason: d.reason || '' };
+                }
+            } catch (e) {}
+            return studentCloseState(task);   // ถ้าเช็คไม่ได้ ใช้ข้อมูลที่มีอยู่
+        }
+
+        let lastClosedSig = '';
+        function computeClosedSig() {
+            return globalTasks.map(t => studentCloseState(t).closed ? '1' : '0').join('');
+        }
+        function tickCloseState() {
+            const sig = computeClosedSig();
+            if (sig !== lastClosedSig) { renderStudentCards(); }
+            applyTaskStatusToModal();
+        }
+
+        function taskMatchesMe(task) {
+            const my = parseClassStr(studentClass);
+            const myRoom = normRoom(studentRoom) || my.room;
+
+            const tDept = normDept(task.department);
+            if (tDept && normDept(studentDepartment) && !deptMatches(task.department, studentDepartment)) return false;
+
+            const shared = Array.isArray(task.sharedClasses) ? task.sharedClasses : [];
+            if (shared.length === 0) return false;                         
+            return shared.some(c => {
+                const p = parseClassStr(c);
+                if (!p.level || p.level !== my.level) return false;        
+                if (p.room && p.room !== myRoom) return false;             
+                return true;
+            });
+        }
+
+        let _fetchBusy = false;
+        async function fetchTasksRealtime() {
+            if (_fetchBusy || document.hidden) return;   // ไม่ซ้อนคำขอ และไม่ดึงเมื่อแท็บถูกซ่อน
+            _fetchBusy = true;
+            try { await _fetchTasksRealtimeInner(); } finally { _fetchBusy = false; }
+        }
+        async function _fetchTasksRealtimeInner() {
+            try {
+                let tasks = null;
+
+                const userKey = studentCode || studentEmail;
+                if (userKey) {
+                    try {
+                        const resS = await fetch(`${BACKEND_URL}?action=get_student_tasks&identifier=${encodeURIComponent(userKey)}&t=${new Date().getTime()}`);
+                        const dataS = await resS.json();
+                        if (dataS && dataS.status === 'success' && Array.isArray(dataS.tasks)) {
+                            tasks = dataS.tasks;
+                            if (dataS.serverNow) serverSkew = Number(dataS.serverNow) - Date.now();
+                        }
+                    } catch(e) {}
+                }
+
+                if (tasks === null) {
+                    const res = await fetch(`${BACKEND_URL}?action=get_tasks&t=${new Date().getTime()}`);
+                    const data = await res.json();
+                    if (data && Array.isArray(data.tasks)) {
+                        tasks = data.tasks.filter(taskMatchesMe);
+                    }
+                }
+
+                if (tasks !== null) {
+                    const newTasksStr = JSON.stringify(tasks);
+                    if (lastTaskHash !== newTasksStr) {
+                        globalTasks = tasks;
+                        lastTaskHash = newTasksStr;
+                        cacheTasksLight(tasks);
+                        renderStudentCards();
+                        preloadTeacherAvatars(globalTasks); // ดึงรูปโปรไฟล์ครูเตรียมไว้ล่วงหน้า
+
+                        // ถ้ากำลังเปิดหน้าต่างงานอยู่ ให้อัปเดตสถานะรับงานทันที
+                        if (currentTask && currentTask.id) {
+                            const fresh = tasks.find(t => String(t.id) === String(currentTask.id));
+                            if (fresh) { currentTask = fresh; }
+                        }
+                        applyTaskStatusToModal();
+                    }
+                }
+            } catch(e) {}
+        }
+
+
+        // ===== IG-style gallery helpers =====
+        function buildIgCarousel(list) {
+            if (!list || list.length === 0) return '';
+            const slides = list.map((src, i) => `<img class="ig-slide" src="${src}" alt="รูปที่ ${i + 1}" loading="lazy" decoding="async" onclick="openIgLightbox(this.src)">`).join('');
+            const many = list.length > 1;
+            const badge = many ? `<div class="ig-count">1/${list.length}</div>` : '';
+            const dots = many ? `<div class="ig-dots">${list.map((_, i) => `<span class="ig-dot${i === 0 ? ' active' : ''}"></span>`).join('')}</div>` : '';
+            const arrows = many ? `<button type="button" class="ig-nav prev hidden-nav" onclick="igNav(this, -1)" aria-label="รูปก่อนหน้า">❮</button><button type="button" class="ig-nav next" onclick="igNav(this, 1)" aria-label="รูปถัดไป">❯</button>` : '';
+            return `<div class="ig-carousel-wrap"><div class="ig-carousel" onscroll="igOnScroll(this)">${slides}</div>${arrows}${badge}${dots}</div>`;
+        }
+        function igOnScroll(el) {
+            const w = el.clientWidth || 1;
+            const idx = Math.round(el.scrollLeft / w);
+            const wrap = el.parentElement;
+            wrap.querySelectorAll('.ig-dot').forEach((d, i) => d.classList.toggle('active', i === idx));
+            const badge = wrap.querySelector('.ig-count');
+            if (badge) badge.textContent = `${idx + 1}/${el.children.length}`;
+            const prev = wrap.querySelector('.ig-nav.prev'), next = wrap.querySelector('.ig-nav.next');
+            if (prev) prev.classList.toggle('hidden-nav', idx <= 0);
+            if (next) next.classList.toggle('hidden-nav', idx >= el.children.length - 1);
+        }
+        function igNav(btn, dir) {
+            const el = btn.parentElement.querySelector('.ig-carousel');
+            el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' });
+        }
+        function openIgLightbox(src) {
+            const box = document.createElement('div');
+            box.className = 'ig-lightbox';
+            box.innerHTML = `<img src="${src}" alt="">`;
+            box.onclick = () => box.remove();
+            document.body.appendChild(box);
+        }
+
+        // เก็บแคชแบบไม่รวมรูปประกอบ (หนัก/เกินโควตา localStorage)
+        function cacheTasksLight(tasks) {
+            try {
+                const light = tasks.map(tk => { const c = { ...tk }; for (let i = 1; i <= 10; i++) delete c['image' + i]; return c; });
+                localStorage.setItem("cached_student_tasks_v2", JSON.stringify(light));
+            } catch (e) {}
+        }
+
+        function renderStudentCards() {
+            const container = document.getElementById('student-cards-container');
+            const myTasks = globalTasks;   
+
+            if(myTasks.length === 0) {
+                container.innerHTML = `<p style="color:#a0aec0; grid-column: 1/-1; text-align:center; padding: 50px 0; font-size: 15px;">ขณะนี้ยังไม่มีชิ้นงานแชร์ส่งถึงระดับชั้นของคุณ (${studentClass}) ค่ะ 😊</p>`;
+                return;
+            }
+
+            lastClosedSig = computeClosedSig();
+            const _e = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+            let cardsHtml = "";
+            window._cardTasks = myTasks;
+            myTasks.forEach((task, cardIdx) => {
+                const cs = studentCloseState(task);
+                const dlText = formatDeadlineTh(task.deadline);
+                const statusBadge = cs.closed
+                    ? `<div><span class="closed-badge">${cs.reason === 'deadline' ? '⏰ หมดเวลาส่งงานแล้ว' : '🔒 ครูสิ้นสุดการรับงานแล้ว'}</span></div>`
+                    : (dlText ? `<div><span class="deadline-badge">⏰ ปิดรับงาน: ${dlText}</span></div>` : '');
+                const defaultImg = "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=600&auto=format&fit=crop";
+                cardsHtml += `
+                    <div class="task-card">
+                        <img class="card-img" src="${_e(task.image || defaultImg)}" alt="Cover Image" loading="lazy" decoding="async">
+                        <div class="card-body">
+                            <div class="card-subject">${_e(task.subject)}</div>
+                            <div class="card-title">${_e(task.title)}</div>
+                            <div style="font-size: 12px; color: #a0aec0; margin-bottom: 8px; font-style: italic;">
+                                ผู้มอบหมาย: ครู${_e(task.teacherName || 'ประจำวิชา')}
+                            </div>
+                            <div class="card-desc">${_e(task.desc || 'ไม่มีรายละเอียดเพิ่มเติม')}</div>
+                            ${statusBadge}
+                            <button class="btn-view" onclick="openDetailModal(window._cardTasks[${cardIdx}])">${cs.closed ? '🔎 ดูรายละเอียดงาน (ปิดรับงานแล้ว)' : '🔎 ดูรายละเอียดงาน / ส่งงาน'}</button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = cardsHtml;
+        }
+
+        async function openDetailModal(task) {
+            currentTask = task;
+            
+            document.getElementById('modal-social-subject').innerText = task.subject || "ชื่อวิชา";
+            document.getElementById('modal-social-title').innerText = task.title || "หัวข้อเรื่อง / ชื่องาน";
+            document.getElementById('modal-social-desc').innerText = task.desc || "รายละเอียดงานทั้งหมดจะแสดงที่นี่...";
+
+            // ใช้รูปโปรไฟล์จากแคชหรือที่แนบมากับงานทันที
+            const cachedAvatar = task.teacherAvatar || (task.teacherUser ? teacherAvatarCache[task.teacherUser] : "");
+            setModalTeacherAvatar(cachedAvatar);
+
+            // เปิด Modal ทันทีโดยไม่รอ
+            document.getElementById('detail-modal').classList.remove('hidden');
+
+            const socialGallery = document.getElementById('modal-social-gallery');
+            const imgList = [];
+            for (let i = 1; i <= 10; i++) { const v = String(task['image' + i] || '').trim(); if (/^(data:image\/|https?:\/\/)/i.test(v)) imgList.push(v); }
+            socialGallery.innerHTML = imgList.length > 0
+                ? buildIgCarousel(imgList)
+                : `<div class="ig-empty">ยังไม่มีรูปภาพประกอบ</div>`;
+
+            const socialDownloadContainer = document.getElementById('modal-social-downloads');
+            socialDownloadContainer.innerHTML = "";
+            if (task.downloadLinks) {
+                const dlLinks = task.downloadLinks.split(',').map(s => s.trim()).filter(Boolean);
+                if (dlLinks.length > 0) {
+                    dlLinks.forEach((l, i) => {
+                        socialDownloadContainer.innerHTML += `<a class="card-link" href="${_e(l)}" target="_blank" rel="noopener" style="font-size: 11px; padding: 6px 10px;">📥 ดาวน์โหลดงาน PDF ที่ ${i + 1}</a>`;
+                    });
+                }
+            }
+            if (socialDownloadContainer.innerHTML === "") {
+                socialDownloadContainer.innerHTML = `<span class="card-no-link" style="font-size: 11px; padding: 6px 10px;">⚠️ ยังไม่ได้แนบลิงก์ดาวน์โหลดงาน</span>`;
+            }
+
+            document.getElementById('selected-drive-file').value = "";
+            clearWorkImage();
+            clearWorkDoc();
+            switchSubmitTab('image');
+            applyTaskStatusToModal();
+
+            // กรณีเปิดครั้งแรกสุดและยังไม่มีในแคช ค่อยดึงเบื้องหลังเพื่ออัปเดตรูปให้เป็นปัจจุบัน
+            if (task.teacherUser) {
+                try {
+                    const res = await fetch(`${BACKEND_URL}?action=get_user_profile&role=teacher&identifier=${encodeURIComponent(task.teacherUser)}&t=${new Date().getTime()}`);
+                    const data = await res.json();
+                    if (data && data.status === 'success' && data.user && data.user.avatar) {
+                        teacherAvatarCache[task.teacherUser] = data.user.avatar;
+                        saveAvatarCache();
+                        if (currentTask && currentTask.teacherUser === task.teacherUser) {
+                            setModalTeacherAvatar(data.user.avatar);
+                        }
+                    }
+                } catch(e) {}
+            }
+        }
+
+        // ===== ส่งงานเป็นรูปภาพ: ย่อรูปในเครื่องก่อนส่ง =====
+        let selectedWorkImage = null; // { base64, mime, name, sizeKB }
+        const WORK_IMAGE_MAX_SIDE = 1280;
+        const WORK_IMAGE_MAX_BYTES = 1500 * 1024; // เป้าหมายหลังย่อ ~1.5 MB
+
+        function loadImageFromFile(file) {
+            return new Promise((resolve, reject) => {
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode_failed')); };
+                img.src = url;
+            });
+        }
+
+        async function resizeImageToJpeg(file) {
+            const img = await loadImageFromFile(file);
+            const scale = Math.min(1, WORK_IMAGE_MAX_SIDE / Math.max(img.width, img.height));
+            const w = Math.max(1, Math.round(img.width * scale));
+            const h = Math.max(1, Math.round(img.height * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff';              // กันพื้นหลังดำเวลาเป็น PNG โปร่งใส
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+
+            let quality = 0.75;
+            let dataUrl = canvas.toDataURL('image/jpeg', quality);
+            while (dataUrl.length * 0.75 > WORK_IMAGE_MAX_BYTES && quality > 0.35) {
+                quality -= 0.1;
+                dataUrl = canvas.toDataURL('image/jpeg', quality);
+            }
+            return dataUrl;
+        }
+
+        async function handleWorkImagePick(input) {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            if (!/^image\//.test(file.type)) {
+                alert("กรุณาเลือกไฟล์รูปภาพเท่านั้นค่ะ");
+                input.value = "";
+                return;
+            }
+
+            const box = document.getElementById('work-image-preview-box');
+            const info = document.getElementById('work-image-info');
+            box.classList.remove('hidden');
+            info.innerText = "⏳ กำลังย่อรูปภาพ...";
+
+            try {
+                const dataUrl = await resizeImageToJpeg(file);
+                const base64 = dataUrl.split(',')[1];
+                const sizeKB = Math.round(base64.length * 0.75 / 1024);
+                const baseName = (file.name || 'work').replace(/\.[^.]+$/, '');
+                selectedWorkImage = { base64: base64, mime: 'image/jpeg', name: baseName + '.jpg', sizeKB: sizeKB };
+                document.getElementById('work-image-preview').src = dataUrl;
+                info.innerText = `✅ ${selectedWorkImage.name} • ย่อแล้วเหลือ ${sizeKB} KB (ต้นฉบับ ${Math.round(file.size / 1024)} KB)`;
+            } catch (e) {
+                selectedWorkImage = null;
+                box.classList.add('hidden');
+                input.value = "";
+                alert("ไม่สามารถอ่านรูปนี้ได้ค่ะ (อาจเป็นไฟล์ HEIC หรือไฟล์เสีย) ลองถ่ายใหม่หรือแปลงเป็น JPG/PNG ก่อน");
+            }
+        }
+
+        function clearWorkImage() {
+            selectedWorkImage = null;
+            const input = document.getElementById('work-image-input');
+            if (input) input.value = "";
+            const box = document.getElementById('work-image-preview-box');
+            if (box) box.classList.add('hidden');
+            const prev = document.getElementById('work-image-preview');
+            if (prev) prev.src = "";
+        }
+
+        // ===== สลับแท็บรูปแบบการส่งงาน =====
+        let currentSubmitMode = 'image';
+        function switchSubmitTab(mode) {
+            currentSubmitMode = mode;
+            ['image', 'doc', 'link'].forEach(m => {
+                document.getElementById('tab-' + m).classList.toggle('active', m === mode);
+                document.getElementById('panel-' + m).classList.toggle('hidden', m !== mode);
+            });
+        }
+
+        // ===== ส่งงานเป็นไฟล์เอกสาร (PDF / Word / PowerPoint / Excel) =====
+        let selectedWorkDoc = null; // { base64, mime, name, sizeKB }
+        const WORK_DOC_MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+        const WORK_DOC_TYPES = {
+            pdf:  { mime: 'application/pdf', icon: '📕' },
+            doc:  { mime: 'application/msword', icon: '📘' },
+            docx: { mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', icon: '📘' },
+            ppt:  { mime: 'application/vnd.ms-powerpoint', icon: '📙' },
+            pptx: { mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation', icon: '📙' },
+            xls:  { mime: 'application/vnd.ms-excel', icon: '📗' },
+            xlsx: { mime: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', icon: '📗' }
+        };
+
+        function formatFileSize(bytes) {
+            if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+            return Math.max(1, Math.round(bytes / 1024)) + ' KB';
+        }
+
+        function readFileAsBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result).split(',')[1] || '');
+                reader.onerror = () => reject(new Error('read_failed'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function docDragOver(e) { e.preventDefault(); document.getElementById('work-doc-dropzone').classList.add('dragover'); }
+        function docDragLeave(e) { e.preventDefault(); document.getElementById('work-doc-dropzone').classList.remove('dragover'); }
+        function docDrop(e) {
+            e.preventDefault();
+            document.getElementById('work-doc-dropzone').classList.remove('dragover');
+            const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (f) processWorkDocFile(f);
+        }
+
+        function handleWorkDocPick(input) {
+            const f = input.files && input.files[0];
+            if (f) processWorkDocFile(f);
+        }
+
+        async function processWorkDocFile(file) {
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            const type = WORK_DOC_TYPES[ext];
+            if (!type) {
+                alert("รองรับเฉพาะไฟล์ PDF, Word, PowerPoint และ Excel เท่านั้นค่ะ");
+                clearWorkDoc();
+                return;
+            }
+            if (file.size > WORK_DOC_MAX_BYTES) {
+                alert("ไฟล์ใหญ่เกิน 10 MB ค่ะ กรุณาลดขนาดไฟล์ หรือใช้แท็บ \"แนบลิงก์\" แทน");
+                clearWorkDoc();
+                return;
+            }
+
+            const chip = document.getElementById('work-doc-chip');
+            chip.classList.remove('hidden');
+            document.getElementById('work-doc-ico').innerText = type.icon;
+            document.getElementById('work-doc-name').innerText = file.name;
+            document.getElementById('work-doc-size').innerText = "⏳ กำลังอ่านไฟล์...";
+
+            try {
+                const base64 = await readFileAsBase64(file);
+                selectedWorkDoc = { base64: base64, mime: type.mime, name: file.name, sizeKB: Math.round(file.size / 1024) };
+                document.getElementById('work-doc-size').innerText = "✅ พร้อมส่ง • " + formatFileSize(file.size);
+            } catch (e) {
+                clearWorkDoc();
+                alert("ไม่สามารถอ่านไฟล์นี้ได้ค่ะ กรุณาลองใหม่อีกครั้ง");
+            }
+        }
+
+        function clearWorkDoc() {
+            selectedWorkDoc = null;
+            const input = document.getElementById('work-doc-input');
+            if (input) input.value = "";
+            const chip = document.getElementById('work-doc-chip');
+            if (chip) chip.classList.add('hidden');
+        }
+
+        function openGoogleDrivePicker() {
+            let driveUrl = "https://drive.google.com";
+            if (studentEmail && studentEmail.includes('@')) {
+                driveUrl = `https://drive.google.com/drive/u/0/?authuser=${encodeURIComponent(studentEmail)}`;
+            }
+            window.open(driveUrl, '_blank');
+        }
+
+        async function submitWork() {
+            if (!currentTask || !currentTask.link) {
+                alert("งานชิ้นนี้ครูผู้สอนยังไม่ได้แนบลิงก์ Google Sheet สำหรับรับงานค่ะ");
+                return;
+            }
+
+            const localState = studentCloseState(currentTask);
+            if (localState.closed) {
+                alert(closedMessage(currentTask, localState.reason));
+                applyTaskStatusToModal();
+                return;
+            }
+
+            const mode = currentSubmitMode;
+            const btn = document.querySelector('.btn-submit-work');
+            let payload = {
+                action: 'submit_work',
+                taskId: currentTask.id || '',
+                sheetUrl: currentTask.link,
+                studentCode: studentCode,
+                studentName: studentName,
+                studentClass: studentClass,
+                studentNo: studentNo,
+                studentEmail: studentEmail,
+                studentFullName: studentName,
+                taskSubject: currentTask.subject || '',
+                taskTitle: currentTask.title || '',
+                teacherName: currentTask.teacherName || ''
+            };
+
+            if (mode === 'image') {
+                if (!selectedWorkImage) { alert("กรุณาเลือกรูปภาพก่อนค่ะ"); return; }
+                payload.submitType = 'image';
+                payload.imageBase64 = selectedWorkImage.base64;
+                payload.mimeType = selectedWorkImage.mime;
+                payload.fileName = selectedWorkImage.name;
+                payload.workData = '';
+            } else if (mode === 'doc') {
+                if (!selectedWorkDoc) { alert("กรุณาเลือกไฟล์เอกสารก่อนค่ะ"); return; }
+                payload.submitType = 'document';
+                payload.fileBase64 = selectedWorkDoc.base64;
+                payload.mimeType = selectedWorkDoc.mime;
+                payload.fileName = selectedWorkDoc.name;
+                payload.workData = '';
+            } else {
+                const linkUrl = document.getElementById('selected-drive-file').value.trim();
+                if (!linkUrl) { alert("กรุณาวางลิงก์ไฟล์งานก่อนค่ะ"); return; }
+                if (!/^https?:\/\//i.test(linkUrl)) { alert("ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https:// ค่ะ"); return; }
+                payload.submitType = 'file';
+                payload.workData = linkUrl;
+                payload.fileName = "ไฟล์จาก Google Drive";
+            }
+
+            const resetBtn = () => { btn.disabled = false; btn.innerText = "📤 ยืนยันการส่งงาน"; };
+
+            try {
+                btn.disabled = true;
+                btn.innerText = "⏳ กำลังตรวจสอบสถานะรับงาน...";
+                const liveState = await verifyTaskStillOpen(currentTask);
+                if (liveState.closed) {
+                    currentTask._forceClosed = liveState.reason || 'teacher';
+                    alert(closedMessage(currentTask, liveState.reason));
+                    resetBtn();
+                    applyTaskStatusToModal();
+                    renderStudentCards();
+                    fetchTasksRealtime();
+                    return;
+                }
+
+                btn.innerText = mode === 'image' ? "⏳ กำลังอัปโหลดรูปภาพ..."
+                              : mode === 'doc' ? "⏳ กำลังอัปโหลดไฟล์..."
+                              : "⏳ กำลังบันทึกข้อมูลลง Google Sheet...";
+
+                // [แก้] อ่านผลจริงจากเซิร์ฟเวอร์ (เดิม no-cors ขึ้นสำเร็จทุกกรณี)
+                const result = await postJSON(BACKEND_URL, payload, 120000);
+
+                if (!result || result.status !== 'success') {
+                    if (result && result.closed) {
+                        currentTask._forceClosed = result.reason || 'teacher';
+                        alert(closedMessage(currentTask, result.reason));
+                        resetBtn();
+                        applyTaskStatusToModal();
+                        renderStudentCards();
+                        fetchTasksRealtime();
+                        return;
+                    }
+                    throw new Error((result && result.message) || 'ส่งงานไม่สำเร็จ');
+                }
+
+                thxCelebrate('submit', mode === 'image' ? "ส่งงานเรียบร้อยแล้วค่ะ! รูปภาพของคุณถูกส่งให้ครูแล้ว"
+                    : mode === 'doc' ? "ส่งงานเรียบร้อยแล้วค่ะ! ไฟล์เอกสารของคุณถูกส่งให้ครูแล้ว"
+                    : "ส่งงานเรียบร้อยแล้วค่ะ! ลิงก์ของคุณถูกบันทึกลงใน Google Sheet ของครูแล้ว");
+                resetBtn();
+                clearWorkImage();
+                clearWorkDoc();
+                document.getElementById('selected-drive-file').value = "";
+                closeDetailModal();
+                if (result.backupOk === false) { try { alert("หมายเหตุ: ส่งงานให้ครูแล้ว แต่สำรองลงชีตส่วนตัวไม่สำเร็จ (ระบบจะสำรองให้ในการส่งครั้งถัดไป)"); } catch (e) {} }
+            } catch (e) {
+                alert("ส่งงานไม่สำเร็จ: " + (e.message || 'กรุณาลองใหม่อีกครั้ง') + "\n(งานยังไม่ถูกส่ง กรุณากดส่งอีกครั้ง)");
+                resetBtn();
+            }
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detail-modal').classList.add('hidden');
+        }
+
+        function goHome() {
+            window.location.href = "index.html";
+        }
+
+        window.onload = () => {
+            checkAuth();
+            setInterval(fetchTasksRealtime, 15000);
+            document.addEventListener('visibilitychange', () => { if (!document.hidden) fetchTasksRealtime(); });
+            setInterval(tickCloseState, 10000);
+        };
+    </script>
+</body>
+</html>

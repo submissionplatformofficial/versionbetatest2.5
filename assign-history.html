@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ประวัติการสั่งงาน & สำรองข้อมูล (ครู)</title>
+    <link rel="icon" type="image/png" href="photo/icon1.png">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg:#0d1b2a; --surface:#112233; --panel:rgba(0,0,0,0.2); --panel2:rgba(0,0,0,0.3);
+            --nav1:#0f2b48; --nav2:#1a365d; --card1:#1b2e4b; --card2:#15243b; --card3:#25406a;
+            --sidebar:#0f2b48; --modal:#172a45;
+            --accent:#ff9f43; --accent2:#e67e22; --accent-rgb:255,159,67; --on-accent:#0f2b48; --on-nav:#ffffff;
+            --text:#e0e6ed; --strong:#ffffff; --muted:#a0aec0;
+            --line:rgba(255,255,255,0.12); --input-bg:rgba(0,0,0,0.25);
+            --green:#10b981; --red:#ef4444; --blue:#38bdf8;
+        }
+        body { font-family: 'Sarabun', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; transition: background-color .35s ease, color .35s ease; }
+        .hidden { display: none !important; }
+        a { color: inherit; }
+
+        .navbar { background: linear-gradient(135deg, var(--nav1) 0%, var(--nav2) 100%); color: var(--on-nav); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 50; }
+        .navbar h1 { font-size: 19px; color: var(--on-nav); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .btn-back { background: rgba(var(--accent-rgb),.18); color: var(--accent); border: 1px solid rgba(var(--accent-rgb),.4); padding: 7px 14px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none; font-family: inherit; }
+        .btn-back:hover { background: var(--accent); color: var(--on-accent); }
+        .who { font-size: 13px; color: var(--muted); }
+        .who b { color: var(--strong); }
+
+        .wrap { max-width: 1100px; margin: 0 auto; padding: 22px 16px 70px; }
+        .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; margin-bottom: 18px; }
+        .card h2 { font-size: 17px; color: var(--strong); border-left: 4px solid var(--accent); padding-left: 10px; margin-bottom: 14px; }
+        .muted { color: var(--muted); font-size: 13.5px; line-height: 1.7; }
+
+        .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: 9px; border: 1px solid transparent; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; text-decoration: none; transition: .2s; }
+        .btn:disabled { opacity: .5; cursor: not-allowed; }
+        .btn-green { background: rgba(16,185,129,.18); color: var(--green); border-color: rgba(16,185,129,.4); }
+        .btn-green:hover:not(:disabled) { background: var(--green); color: #fff; }
+        .btn-orange { background: rgba(var(--accent-rgb),.18); color: var(--accent); border-color: rgba(var(--accent-rgb),.4); }
+        .btn-orange:hover:not(:disabled) { background: var(--accent); color: var(--on-accent); }
+        .btn-red { background: rgba(239,68,68,.15); color: #f87171; border-color: rgba(239,68,68,.4); }
+        .btn-red:hover:not(:disabled) { background: var(--red); color: #fff; }
+        .btn-gray { background: rgba(255,255,255,.07); color: var(--text); border-color: var(--line); }
+        .btn-gray:hover:not(:disabled) { background: rgba(255,255,255,.15); }
+        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+
+        .status-line { font-size: 15px; color: var(--strong); margin-bottom: 6px; }
+        .status-line .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--green); margin-right: 8px; box-shadow: 0 0 8px var(--green); }
+
+        .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .chip { padding: 6px 13px; border-radius: 999px; font-size: 13px; cursor: pointer; background: rgba(255,255,255,.07); border: 1px solid var(--line); color: var(--text); font-family: inherit; }
+        .chip.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 700; }
+        .banner { background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.35); color: var(--blue); border-radius: 10px; padding: 10px 14px; margin-top: 14px; font-size: 13.5px; }
+
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .stat { background: var(--card1); border: 1px solid var(--line); border-radius: 14px; padding: 14px; text-align: center; }
+        .stat .n { font-size: 28px; font-weight: 700; color: var(--strong); }
+        .stat .l { font-size: 13px; color: var(--muted); }
+        .stat.g .n { color: var(--green); } .stat.o .n { color: var(--accent); } .stat.r .n { color: #f87171; }
+
+        .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+        .filters input, .filters select { background: var(--input-bg); color: var(--strong); border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; font-size: 14px; font-family: inherit; }
+        .filters input { flex: 1; min-width: 200px; }
+
+        .task { background: var(--card1); border: 1px solid var(--line); border-radius: 14px; margin-bottom: 10px; overflow: hidden; }
+        .task summary { list-style: none; cursor: pointer; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+        .task summary::-webkit-details-marker { display: none; }
+        .t-title { font-size: 16px; font-weight: 700; color: var(--strong); word-break: break-word; }
+        .t-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+        .badge { padding: 3px 11px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .b-ok { background: rgba(16,185,129,.18); color: var(--green); }
+        .b-closed { background: rgba(var(--accent-rgb),.2); color: var(--accent); }
+        .b-del { background: rgba(239,68,68,.18); color: #f87171; }
+        .task.deleted { opacity: .8; border-style: dashed; }
+        .t-body { padding: 4px 16px 16px; border-top: 1px solid var(--line); display: grid; grid-template-columns: 150px 1fr; gap: 8px 14px; font-size: 14px; }
+        .t-body .k { color: var(--muted); }
+        .t-body .v { color: var(--text); word-break: break-word; white-space: pre-wrap; }
+        .t-body a { color: var(--blue); }
+        .empty { text-align: center; color: var(--muted); padding: 30px 10px; }
+
+        .timeline { max-height: 420px; overflow-y: auto; }
+        .ev { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+        .ev .tm { color: var(--muted); font-size: 12.5px; min-width: 150px; }
+        .ev .nm { font-weight: 700; color: var(--accent); }
+        .ev .tt { color: var(--strong); }
+
+        .sheet-row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+        .sheet-row:last-child { border-bottom: none; }
+
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.75); backdrop-filter: blur(5px); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+        .dlg { background: var(--modal); border: 1px solid var(--line); border-radius: 16px; padding: 24px; max-width: 440px; width: 100%; }
+        .dlg h3 { color: var(--strong); font-size: 18px; margin-bottom: 8px; }
+        .dlg p { color: var(--text); font-size: 14px; line-height: 1.7; margin-bottom: 18px; }
+        .dlg .row { justify-content: flex-end; }
+
+        .loading { text-align: center; padding: 50px 10px; color: var(--muted); }
+        .spin { width: 34px; height: 34px; border: 4px solid rgba(255,255,255,.15); border-top-color: var(--accent); border-radius: 50%; animation: sp 1s linear infinite; margin: 0 auto 12px; }
+        @keyframes sp { to { transform: rotate(360deg); } }
+        #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 400; padding: 10px 18px; border-radius: 10px; font-size: 14px; color: #fff; max-width: 90%; text-align: center; opacity: 0; transition: opacity .3s; pointer-events: none; }
+        
+        /* ===== ปุ่ม + แผงสไลด์ "ตรวจดูงาน" ===== */
+        .t-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+        .btn-sm { padding: 6px 12px; font-size: 13px; border-radius: 8px; }
+        .rv-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); backdrop-filter: blur(3px); z-index: 250; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+        .rv-backdrop.show { opacity: 1; pointer-events: auto; }
+        .rv-panel { position: fixed; top: 0; right: 0; bottom: 0; width: min(580px, 100vw); background: var(--surface); border-left: 1px solid var(--line); z-index: 260; display: flex; flex-direction: column; transform: translateX(105%); transition: transform .35s cubic-bezier(.22,.8,.3,1); box-shadow: -10px 0 40px rgba(0,0,0,.4); }
+        .rv-panel.open { transform: translateX(0); }
+        .rv-head { padding: 16px 18px; background: linear-gradient(135deg, var(--nav1), var(--nav2)); color: var(--on-nav); display: flex; gap: 12px; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid var(--line); }
+        .rv-head h3 { font-size: 17px; color: var(--on-nav); word-break: break-word; }
+        .rv-head .rv-sub { font-size: 13px; opacity: .8; margin-top: 3px; }
+        .rv-x { background: rgba(255,255,255,.12); border: 1px solid var(--line); color: var(--on-nav); width: 34px; height: 34px; border-radius: 50%; font-size: 16px; cursor: pointer; flex-shrink: 0; font-family: inherit; }
+        .rv-x:hover { background: var(--red); border-color: var(--red); }
+        .rv-tools { padding: 12px 18px; display: flex; gap: 8px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+        .rv-tools input, .rv-tools select { background: var(--input-bg); color: var(--strong); border: 1px solid var(--line); border-radius: 9px; padding: 8px 11px; font-size: 14px; font-family: inherit; }
+        .rv-tools input { flex: 1; min-width: 140px; }
+        .rv-sum { padding: 10px 18px; font-size: 14px; color: var(--strong); border-bottom: 1px solid var(--line); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .rv-sum b { color: var(--green); font-size: 17px; }
+        .rv-body { flex: 1; overflow-y: auto; padding: 14px 18px 30px; }
+        .rv-card { background: var(--card1); border: 1px solid var(--line); border-radius: 13px; padding: 13px; margin-bottom: 10px; }
+        .rv-who { display: flex; gap: 11px; align-items: center; }
+        .rv-no { min-width: 42px; height: 42px; border-radius: 12px; background: rgba(var(--accent-rgb),.18); color: var(--accent); font-weight: 700; font-size: 17px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .rv-nm { font-weight: 700; color: var(--strong); font-size: 15.5px; word-break: break-word; }
+        .rv-meta { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+        .rv-work { margin-top: 11px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        .rv-thumb { width: 130px; height: 100px; border-radius: 10px; object-fit: cover; background: var(--panel2); border: 1px solid var(--line); display: block; }
+        .rv-file { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 10px; background: rgba(56,189,248,.12); border: 1px solid rgba(56,189,248,.35); color: var(--blue); text-decoration: none; font-size: 13.5px; font-weight: 600; word-break: break-all; }
+        .rv-file:hover { background: rgba(56,189,248,.25); }
+        .rv-time { font-size: 12px; color: var(--muted); margin-top: 8px; }
+        .rv-again { display: inline-block; margin-left: 6px; padding: 1px 9px; border-radius: 999px; background: rgba(var(--accent-rgb),.2); color: var(--accent); font-size: 11.5px; font-weight: 700; }
+        .rv-old { margin-top: 9px; border-top: 1px dashed var(--line); padding-top: 7px; font-size: 13px; }
+        .rv-old summary { cursor: pointer; color: var(--muted); }
+        .rv-old .rv-oi { padding: 6px 0; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; color: var(--muted); }
+        .rv-old a { color: var(--blue); }
+        @media (max-width: 480px) { .rv-thumb { width: 100%; height: 160px; } }
+        /* ===== สติกเกอร์ / มาสคอต / ของตกลงมา จากร้านธีม ===== */
+        .deco-item { position: fixed; pointer-events: none; }
+        .deco-front { z-index: 600; }
+        .deco-back { z-index: -1; }
+        .deco-inner { position: relative; }
+        .deco-inner img { width: 100%; height: auto; display: block; }
+        .deco-emoji { line-height: 1; text-align: center; white-space: nowrap; }
+        .deco-bubble { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; margin-bottom: 4px; background: var(--surface, #fff); color: var(--strong, #111); border: 2px solid var(--accent, #f90); border-radius: 14px; padding: 4px 12px; font-size: 12px; font-weight: 700; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .anim-float { animation: thFloat 3s ease-in-out infinite; }
+        .anim-sway { animation: thSway 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+        .anim-spin { animation: thSpin 12s linear infinite; }
+        .anim-pulse { animation: thPulse 2s ease-in-out infinite; }
+        @keyframes thFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes thSway { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        @keyframes thSpin { to { transform: rotate(360deg); } }
+        @keyframes thPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+        .deco-fall { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 550; }
+        .deco-fall span { position: absolute; top: -10%; opacity: .85; animation: thFall linear infinite; }
+        @keyframes thFall { 0% { transform: translateY(-10vh) rotate(0deg); } 100% { transform: translateY(112vh) rotate(360deg); } }
+        @media (max-width: 700px) { .deco-hm { display: none !important; } }
+        @media (prefers-reduced-motion: reduce) { .deco-fall { display: none; } }
+        @media (max-width: 640px) { .t-body { grid-template-columns: 1fr; } .t-body .k { margin-top: 6px; font-weight: 700; } .ev { flex-direction: column; gap: 2px; } }
+    </style>
+    <script>
+/* [ความปลอดภัย] แนบ authTokens ไปกับทุกคำขอที่ส่งไป Apps Script โดยอัตโนมัติ (ไม่กระทบการทำงานเดิม) */
+(function () {
+  if (window.__authFetchPatched) return; window.__authFetchPatched = true;
+  var _fetch = window.fetch;
+  function tokens() {
+    var out = [], srcs = [[sessionStorage, 'loggedInTeacher'], [sessionStorage, 'loggedInUser'], [localStorage, 'savedTeacherProfile'], [localStorage, 'savedUserProfile']];
+    for (var i = 0; i < srcs.length; i++) {
+      try {
+        var raw = srcs[i][0].getItem(srcs[i][1]);
+        if (!raw) continue;
+        var o = JSON.parse(raw), t = o && (o.authToken || o.adminToken);
+        if (t && out.indexOf(String(t)) === -1) out.push(String(t));
+      } catch (e) {}
+    }
+    return out;
+  }
+  window.fetch = function (input, init) {
+    try {
+      var url = typeof input === 'string' ? input : ((input && input.url) || '');
+      if (url.indexOf('script.google.com/macros/') !== -1) {
+        var tk = tokens();
+        if (tk.length) {
+          var method = String((init && init.method) || 'GET').toUpperCase();
+          if (method === 'POST' && init && typeof init.body === 'string' && init.body.charAt(0) === '{' && init.body.indexOf('"authTokens"') === -1) {
+            var rest = init.body.slice(1);
+            init = Object.assign({}, init, { body: '{"authTokens":' + JSON.stringify(tk) + (rest.replace(/^\s+/, '').charAt(0) === '}' ? '' : ',') + rest });
+          } else if (method === 'GET' && typeof input === 'string' && url.indexOf('authTokens=') === -1) {
+            input = input + (input.indexOf('?') === -1 ? '?' : '&') + 'authTokens=' + encodeURIComponent(tk.join(','));
+          }
+        }
+      }
+    } catch (e) {}
+    return _fetch.call(this, input, init);
+  };
+})();
+</script>
+<script>
+        /* ===== ร้านธีม: ดึงธีมที่ admin สร้างไว้ (ชีต Admin คอลัมน์ Q เป็นต้นไป) มาให้เลือก — ครูมีเฉพาะธีมเริ่มต้น + ธีมจากร้าน ===== */
+        // ===== ลิงก์ Apps Script (ใส่ที่เดียวตรงนี้ที่เดียว) =====
+        const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzgkaA8d9v4jHKqN1Sp4K4t_NXzWMR8NqEVYhC2R6doJv0Pg6YNPF8wlAIVi2fLOSvo/exec";
+        const THEME_API = BACKEND_URL; // ใช้ลิงก์เดียวกับด้านบน ไม่ต้องแก้ซ้ำ
+        const SHOP_CACHE_KEY = 'shop_themes_cache_v3';
+        const THEME_SEL = { page: 'body', nav: '.navbar', card: '.task, .stat', side: '.th-unused', main: '.card', btn: '.btn-orange, .btn-back', modal: '.dlg', mtitle: '.dlg h3', backdrop: '.overlay', input: '.filters input, .filters select', drop: '.th-unused', tile: '.th-unused', title: '.card h2', navTitle: '.navbar h1', user: '.who', userLabel: '.who b', userVal: '.who span' };
+        const THEMES = [{ id: 'default', name: 'กรมท่า (เริ่มต้น)', nav: '#1a365d', bg: '#112233', accent: '#ff9f43' }];
+        let SHOP_THEMES = [];   // { id:'shop-xxx', name, price, config }
+
+        const THEME_FONTS = {
+            prompt: ['Prompt', 'Prompt', 'Prompt:wght@400;600;700'],
+            kanit: ['Kanit', 'Kanit', 'Kanit:wght@400;600;700'],
+            sarabun: ['Sarabun (ทางการ)', 'Sarabun', 'Sarabun:wght@400;600;700'],
+            mitr: ['Mitr (หนาป้อม)', 'Mitr', 'Mitr:wght@400;500;600'],
+            mali: ['Mali (ลายมือน่ารัก)', 'Mali', 'Mali:wght@400;600;700'],
+            itim: ['Itim (ลายมือเด็ก)', 'Itim', 'Itim'],
+            sriracha: ['Sriracha (ลายมือ)', 'Sriracha', 'Sriracha'],
+            pattaya: ['Pattaya (หัวมน)', 'Pattaya', 'Pattaya'],
+            charmonman: ['Charmonman (อักษรหวาน)', 'Charmonman', 'Charmonman:wght@400;700'],
+            srisakdi: ['Srisakdi (ลายเส้น)', 'Srisakdi', 'Srisakdi:wght@400;700'],
+            chakra: ['Chakra Petch (ไซไฟ)', 'Chakra Petch', 'Chakra+Petch:wght@400;600;700'],
+            k2d: ['K2D', 'K2D', 'K2D:wght@400;600;700'],
+            niramit: ['Niramit', 'Niramit', 'Niramit:wght@400;600;700'],
+            athiti: ['Athiti', 'Athiti', 'Athiti:wght@400;600;700'],
+            krub: ['Krub', 'Krub', 'Krub:wght@400;600;700'],
+            pridi: ['Pridi (มีหัว)', 'Pridi', 'Pridi:wght@400;600;700']
+        };
+
+        /* ================================================================================
+           THEME ENGINE v4 START — ใช้ร่วมกันทั้งหน้า admin (ตัวอย่างสด) / หน้าครู / หน้านักเรียน
+           (คัดลอกบล็อกนี้ทั้งก้อน START…END ไปวางแทนเอนจินเดิมในหน้าครู/นักเรียนได้เลย)
+           เพิ่มใหม่: ความโปร่งใสกล่อง • สีตัวอักษรแยกส่วน • วิดีโอ • สติกเกอร์ปรับละเอียด • ไล่สี 3 สี/วงกลม • เงาตัวอักษร
+           ================================================================================ */
+        function thNum(v, a, b, d) { v = Number(v); return isFinite(v) ? Math.min(b, Math.max(a, Math.round(v))) : d; }
+        function thImg(u) {
+            u = String(u || '').trim();
+            const m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/);
+            if (m) return 'https://lh3.googleusercontent.com/d/' + m[1];
+            return /^https:\/\/[^\s"'<>()\\]+$/.test(u) ? u.substring(0, 1000) : '';
+        }
+        function thFlt(v, a, b, d) { v = Number(v); return (v === null || !isFinite(v)) ? d : Math.round(Math.min(b, Math.max(a, v)) * 100) / 100; }
+        /* แปลงลิงก์แชร์ Google Drive เป็นลิงก์เล่นตรงสำหรับแท็ก <video> (ตรงกับ thVidDrive ในหน้า admin) */
+        function thVidDrive(u) {
+            u = String(u || '').trim();
+            const m = u.match(/drive\.google\.com\/file\/d\/([\w-]+)/) || u.match(/drive\.google\.com\/(?:open|uc)\?(?:[^#]*&)?id=([\w-]+)/) || u.match(/drive\.usercontent\.google\.com\/download\?(?:[^#]*&)?id=([\w-]+)/);
+            return m ? 'https://drive.usercontent.google.com/download?id=' + m[1] + '&export=download&confirm=t' : '';
+        }
+        function thVid(u) { u = String(u || '').trim(); const d = thVidDrive(u); if (d) return d; return /^https:\/\/[^\s"'<>()\\]+$/.test(u) ? u.substring(0, 1000) : ''; }
+        function cleanCfgBase(c) {
+            c = c || {};
+            const al = (v) => (v === undefined || v === null || v === '') ? 100 : thNum(v, 0, 100, 100);
+            const hex = (v, d) => /^#[0-9a-fA-F]{6}$/.test(String(v || '')) ? String(v) : d;
+            const hex0 = (v) => /^#[0-9a-fA-F]{6}$/.test(String(v || '')) ? String(v) : '';
+            const txt = (v, n) => String(v || '').replace(/[<>"'`\\&]/g, '').trim().substring(0, n);
+            const inl = (v, list, d) => list.indexOf(v) !== -1 ? v : d;
+            const emo = (v, n) => Array.from(txt(v, 48)).slice(0, n).join('');
+            const bool = (v, d) => (v === undefined || v === null || v === '') ? d : ((v === 0 || v === false || v === '0') ? 0 : 1);
+            const rad = (v, max) => (v === '' || v == null || !isFinite(Number(v)) || Number(v) < 0) ? -1 : thNum(v, 0, max, -1);
+            const o = {
+                mode: c.mode === 'light' ? 'light' : 'dark',
+                bg: hex(c.bg, '#0d1b2a'), surface: hex(c.surface, '#112233'), nav1: hex(c.nav1, '#0f2b48'), nav2: hex(c.nav2, '#1a365d'),
+                card1: hex(c.card1, '#1b2e4b'), accent: hex(c.accent, '#ff9f43'), text: hex(c.text, '#e0e6ed'), strong: hex(c.strong, '#ffffff'),
+                tagline: txt(c.tagline, 80),
+                badge: inl(c.badge, ['NEW', 'HOT', 'SALE'], ''),
+                /* ความโปร่งใสของกล่อง (100 = ทึบเหมือนเดิม) / เบลอด้านหลัง / สีกล่องเสริม */
+                navAlpha: al(c.navAlpha), sideAlpha: al(c.sideAlpha), mainAlpha: al(c.mainAlpha), cardAlpha: al(c.cardAlpha), modalAlpha: al(c.modalAlpha), inputAlpha: al(c.inputAlpha),
+                navBlur: thNum(c.navBlur, 0, 30, 0), sideBlur: thNum(c.sideBlur, 0, 30, 0), mainBlur: thNum(c.mainBlur, 0, 30, 0),
+                card2: hex0(c.card2), sideBg: hex0(c.sideBg), modalBg: hex0(c.modalBg), inputBg: hex0(c.inputBg), lineColor: hex0(c.lineColor), cardShadowColor: hex0(c.cardShadowColor),
+                /* สีตัวอักษรแยกส่วน (ว่าง = อัตโนมัติเหมือนเดิม) */
+                pageTitle: hex0(c.pageTitle), navText: hex0(c.navText), sideText: hex0(c.sideText), cardText: hex0(c.cardText), cardTitle: hex0(c.cardTitle),
+                muted: hex0(c.muted), btnText: hex0(c.btnText), inputText: hex0(c.inputText), placeholder: hex0(c.placeholder), modalText: hex0(c.modalText), modalTitle: hex0(c.modalTitle),
+                /* สีละเอียดเพิ่มเติม: ชื่อหน้า • กล่องข้อมูลผู้ใช้ • ปุ่มเมนู/กลับหน้าหลัก • หัวข้อแถบข้าง • ชื่อวิชา • ลิงก์ • ป้ายช่องกรอก (ว่าง = อัตโนมัติ) */
+                navTitle: hex0(c.navTitle), userLabel: hex0(c.userLabel), userValue: hex0(c.userValue), userSep: hex0(c.userSep), userBg: hex0(c.userBg), userLine: hex0(c.userLine),
+                homeText: hex0(c.homeText), homeBg: hex0(c.homeBg), menuText: hex0(c.menuText), menuBg: hex0(c.menuBg),
+                sideTitle: hex0(c.sideTitle), subject: hex0(c.subject), linkText: hex0(c.linkText), label: hex0(c.label),
+                textShadow: inl(c.textShadow, ['soft', 'strong', 'glow', 'outline'], ''),
+                /* ตัวอักษร / เคอร์เซอร์ */
+                font: inl(c.font, Object.keys(THEME_FONTS), ''), titleFont: inl(c.titleFont, Object.keys(THEME_FONTS), ''),
+                titleFx: inl(c.titleFx, ['gradient', 'shadow', 'glow', 'outline', 'rainbow'], ''),
+                cursor: emo(c.cursor, 4), scrollTheme: bool(c.scrollTheme, 0),
+                /* พื้นหลัง */
+                bgGrad: hex0(c.bgGrad), bgAngle: thNum(c.bgAngle, 0, 360, 160), bgGrad2: hex0(c.bgGrad2), bgGradType: inl(c.bgGradType, ['radial'], ''),
+                pattern: emo(c.pattern, 4), patSize: thNum(c.patSize, 30, 200, 90), patOpacity: thNum(c.patOpacity, 5, 90, 22),
+                bgImage: thImg(c.bgImage), bgSize: inl(c.bgSize, ['cover', 'contain', 'tile'], 'cover'),
+                bgFixed: bool(c.bgFixed, 1), bgOverlay: thNum(c.bgOverlay, 0, 95, 50),
+                ambient: inl(c.ambient, ['aurora', 'stars', 'bokeh', 'fireflies'], ''), ambientLevel: thNum(c.ambientLevel, 10, 100, 50),
+                frame: inl(c.frame, ['solid', 'dashed', 'dotted', 'double', 'neon'], ''), frameWidth: thNum(c.frameWidth, 2, 16, 6), frameColor: hex0(c.frameColor), frameEmoji: emo(c.frameEmoji, 4),
+                /* รูปบนส่วนต่างๆ */
+                navImage: thImg(c.navImage), navOverlay: thNum(c.navOverlay, 0, 95, 35),
+                cardImage: thImg(c.cardImage), cardOverlay: thNum(c.cardOverlay, 0, 95, 60),
+                sideImage: thImg(c.sideImage), sideOverlay: thNum(c.sideOverlay, 0, 95, 50),
+                mainImage: thImg(c.mainImage), mainOverlay: thNum(c.mainOverlay, 0, 95, 60),
+                /* การ์ด */
+                radius: rad(c.radius, 32),
+                cardBorder: inl(c.cardBorder, ['solid', 'dashed', 'dotted', 'none'], ''), cardBorderW: thNum(c.cardBorderW, 0, 8, 0), cardBorderColor: hex0(c.cardBorderColor),
+                cardStyle: inl(c.cardStyle, ['glass', 'flat', 'neon', 'paper', 'sticker'], ''), glassBlur: thNum(c.glassBlur, 0, 30, 0),
+                cardShadow: thNum(c.cardShadow, 0, 100, 0), cardHover: inl(c.cardHover, ['lift', 'tilt', 'glow', 'bounce', 'zoom'], ''),
+                glow: c.glow ? 1 : 0,
+                /* ปุ่ม / ช่องกรอก */
+                btnStyle: inl(c.btnStyle, ['gradient', 'outline', 'soft', 'glass'], ''), btnColor: hex0(c.btnColor), btnColor2: hex0(c.btnColor2), btnRadius: rad(c.btnRadius, 40),
+                btnShadow: inl(c.btnShadow, ['soft', 'glow', 'pop3d'], ''), btnHover: inl(c.btnHover, ['lift', 'pulse', 'wiggle', 'shine'], ''),
+                inputStyle: inl(c.inputStyle, ['underline', 'pill', 'soft', 'glow'], ''),
+                /* หน้าต่างสร้างกล่องงาน / ส่งงาน */
+                modalAnim: inl(c.modalAnim, ['pop', 'slide', 'drop', 'zoom', 'flip'], ''), modalRadius: rad(c.modalRadius, 40),
+                modalBorder: inl(c.modalBorder, ['solid', 'dashed', 'dotted', 'double', 'neon'], ''), modalGlow: bool(c.modalGlow, 0), modalGlass: bool(c.modalGlass, 0),
+                modalHead: inl(c.modalHead, ['gradient', 'underline', 'pill'], ''), modalDeco: emo(c.modalDeco, 4), modalDecoPos: inl(c.modalDecoPos, ['tr', 'tl', 'top', 'diag'], 'tr'),
+                backdropColor: hex0(c.backdropColor), backdropOpacity: thNum(c.backdropOpacity, 20, 90, 60), backdropBlur: thNum(c.backdropBlur, 0, 16, 0),
+                dropStyle: inl(c.dropStyle, ['solid', 'dashed', 'dotted', 'glow'], ''), dropAnim: inl(c.dropAnim, ['pulse', 'wiggle'], ''),
+                /* ฉลองความสำเร็จ */
+                celebrate: inl(c.celebrate, ['confetti', 'burst', 'rain', 'fireworks'], ''), celebEmoji: emo(c.celebEmoji, 12), celebCount: thNum(c.celebCount, 10, 120, 44),
+                celebText: txt(c.celebText, 60), celebText2: txt(c.celebText2, 60),
+                /* ของตกลงมา / เมาส์ */
+                fall: emo(c.fall, 10), fallCount: thNum(c.fallCount, 3, 40, 14), fallSpeed: thNum(c.fallSpeed, 3, 30, 12), fallSize: thNum(c.fallSize, 10, 60, 22),
+                fallDir: inl(c.fallDir, ['up', 'diag'], 'down'), fallSpin: bool(c.fallSpin, 1), fallSway: bool(c.fallSway, 0),
+                /* ของตกลงมา — ตัวเลือกเสริม (ค่าเริ่มต้น = พฤติกรรมเดิมทุกอย่าง) */
+                fallLayer: inl(c.fallLayer, ['back', 'mix'], 'front'), fallBackPct: thNum(c.fallBackPct, 0, 100, 50),
+                fallX1: thNum(c.fallX1, 0, 100, 0), fallX2: thNum(c.fallX2, 0, 100, 100),
+                fallOpacity: thNum(c.fallOpacity, 10, 100, 85), fallBackOpacity: thNum(c.fallBackOpacity, 10, 100, 70),
+                fallBlur: thFlt(c.fallBlur, 0, 8, 0), fallBackBlur: thFlt(c.fallBackBlur, 0, 8, 0), fallBackSmall: bool(c.fallBackSmall, 0),
+                fallWind: thNum(c.fallWind, -60, 60, 0), fallGlow: hex0(c.fallGlow), fallSizeVar: thNum(c.fallSizeVar, 0, 100, 50),
+                clickFx: inl(c.clickFx, ['sparkle', 'hearts', 'ripple', 'confetti'], ''), trail: emo(c.trail, 8),
+                stickers: [], videos: []
+            };
+            const arr = Array.isArray(c.stickers) ? c.stickers.slice(0, 12) : [];
+            if (!arr.length && c.mascotUrl) arr.push({ url: c.mascotUrl, pos: 'bl', size: 130, anim: 'sway', text: c.mascotText }); // ธีมรุ่นเก่า
+            arr.forEach(s => {
+                s = s || {};
+                const url = thImg(s.url), em = emo(s.emoji, 4);
+                if (!url && !em) return;
+                o.stickers.push({
+                    url: url, emoji: url ? '' : em,
+                    pos: inl(s.pos, ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br', 'free'], 'br'), x: thFlt(s.x, 0, 100, 50), y: thFlt(s.y, 0, 100, 50),
+                    size: thNum(s.size, 20, 600, 120), opacity: thNum(s.opacity, 10, 100, 100), off: thNum(s.off, 0, 400, 12),
+                    rotate: thNum(s.rotate, -180, 180, 0), flip: bool(s.flip, 0), shadow: bool(s.shadow, 0),
+                    anim: inl(s.anim, ['none', 'float', 'spin', 'pulse', 'sway', 'bounce', 'wiggle', 'heart', 'swing', 'tada', 'shake', 'rubber', 'flash', 'drift'], 'none'), layer: s.layer === 'back' ? 'back' : 'front',
+                    hideMobile: bool(s.hideMobile, 1), text: txt(s.text, 60),
+                    speed: thFlt(s.speed, 0.5, 3, 1), delay: thFlt(s.delay, 0, 10, 0), hue: thNum(s.hue, 0, 360, 0), gray: thNum(s.gray, 0, 100, 0), bright: thNum(s.bright, 50, 150, 100),
+                    blur: thFlt(s.blur, 0, 10, 0), round: thNum(s.round, 0, 50, 0), glowC: hex0(s.glowC), glowSize: thNum(s.glowSize, 4, 40, 14), bubbleBg: hex0(s.bubbleBg), bubbleText: hex0(s.bubbleText)
+                });
+            });
+            (Array.isArray(c.videos) ? c.videos.slice(0, 4) : []).forEach(v => {
+                v = v || {};
+                const url = thVid(v.url); if (!url) return;
+                o.videos.push({
+                    url: url, mode: inl(v.mode, ['bg', 'box'], 'box'), pos: inl(v.pos, ['tl', 'tc', 'tr', 'ml', 'mr', 'bl', 'bc', 'br'], 'br'),
+                    size: thNum(v.size, 80, 900, 280), off: thNum(v.off, 0, 400, 16), opacity: thNum(v.opacity, 5, 100, 100), radius: thNum(v.radius, 0, 80, 16),
+                    ratio: inl(v.ratio, ['16:9', '9:16', '1:1', '4:3'], '16:9'), fit: inl(v.fit, ['cover', 'contain'], 'cover'), shape: inl(v.shape, ['circle'], ''),
+                    speed: thFlt(v.speed, 0.25, 2, 1), dim: thNum(v.dim, 0, 90, 35), layer: v.layer === 'back' ? 'back' : 'front',
+                    loop: bool(v.loop, 1), shadow: bool(v.shadow, 1), border: bool(v.border, 0), hideMobile: bool(v.hideMobile, 1)
+                });
+            });
+            return o;
+        }
+        /* ===== ตกแต่งรายหน้า (PAGE DECOR) — ธีมหนึ่งชุดมีของตกแต่งแยกแต่ละหน้า ขายทั้งชุดเหมือนธีม LINE ===== */
+        const PAGE_DECOR = [
+            ['teacher', '👩‍🏫 หน้าครู'], ['student', '🎓 หน้านักเรียน'], ['box', '📦 ตอนสร้างกล่องงาน'], ['submit', '📤 ตอนส่งงาน'],
+            ['assign', '🗂️ ประวัติสั่งงาน (ครู)'], ['assigndlg', '❓ กล่องยืนยัน (ประวัติสั่งงาน)'],
+            ['subhist', '🕘 ประวัติส่งงาน (นักเรียน)'], ['subtrash', '🗑️ ถังขยะ (ประวัติส่งงาน)'], ['subdlg', '❓ กล่องยืนยัน (ประวัติส่งงาน)']
+        ];
+        const PAGE_KEYS = PAGE_DECOR.map(a => a[0]);
+        const PAGE_MAX_STK = 8, PAGE_MAX_VID = 2;
+        const PAGE_FALL_KEYS = ['fall', 'fallCount', 'fallSpeed', 'fallSize', 'fallDir', 'fallSpin', 'fallSway', 'fallLayer', 'fallBackPct', 'fallX1', 'fallX2', 'fallOpacity', 'fallBackOpacity', 'fallBlur', 'fallBackBlur', 'fallBackSmall', 'fallWind', 'fallGlow', 'fallSizeVar'];
+        const PAGE_FRAME_KEYS = ['frame', 'frameWidth', 'frameColor', 'frameEmoji'];
+        function pageDecorDefaults() {
+            const b = cleanCfgBase({}), o = { inherit: 1, stickers: [], videos: [] };
+            ['ambient', 'ambientLevel'].concat(PAGE_FALL_KEYS, PAGE_FRAME_KEYS).forEach(k => { o[k] = b[k]; });
+            return o;
+        }
+        /* กรองค่าธีมทั้งก้อน + ของตกลงแต่งรายหน้า (cfg.pages[หน้า]) — หน้าเก่าที่ไม่รู้จัก pages จะข้ามไปเฉยๆ */
+        function cleanCfg(c) {
+            const o = cleanCfgBase(c), src = (c && c.pages && typeof c.pages === 'object') ? c.pages : null;
+            if (!src) return o;
+            const pg = {};
+            PAGE_KEYS.forEach(k => {
+                const p = src[k]; if (!p || typeof p !== 'object') return;
+                const b = cleanCfgBase(p), keep = (p.inherit === 0 || p.inherit === false || p.inherit === '0') ? 0 : 1;
+                const r = { inherit: keep, stickers: b.stickers.slice(0, PAGE_MAX_STK), videos: b.videos.slice(0, PAGE_MAX_VID) };
+                if (b.ambient) { r.ambient = b.ambient; r.ambientLevel = b.ambientLevel; }
+                if (b.fall) PAGE_FALL_KEYS.forEach(f => { r[f] = b[f]; });
+                if (b.frame) PAGE_FRAME_KEYS.forEach(f => { r[f] = b[f]; });
+                if (r.stickers.length || r.videos.length || r.ambient || r.fall || r.frame || !keep) pg[k] = r;
+            });
+            if (Object.keys(pg).length) o.pages = pg;
+            return o;
+        }
+        /* รวมของตกแต่งส่วนกลาง + ของเฉพาะหน้า → ค่าที่ใช้ส่งให้ renderDecor(cfg, host) ของหน้านั้น
+           key = teacher|student|box|submit|assign|assigndlg|subhist|subtrash|subdlg */
+        function themePageCfg(c, key) {
+            const p = c && c.pages && c.pages[key]; if (!p) return c;
+            const o = Object.assign({}, c);
+            if (p.inherit === 0) { o.stickers = []; o.videos = []; o.ambient = ''; o.fall = ''; o.frame = ''; }
+            o.stickers = (o.stickers || []).concat(p.stickers || []);
+            o.videos = (o.videos || []).concat(p.videos || []);
+            if (p.ambient) { o.ambient = p.ambient; o.ambientLevel = p.ambientLevel; }
+            if (p.fall) PAGE_FALL_KEYS.forEach(f => { o[f] = p[f]; });
+            if (p.frame) PAGE_FRAME_KEYS.forEach(f => { o[f] = p[f]; });
+            return o;
+        }
+        /* ===== สลับของตกแต่งตามหน้า/หน้าต่างที่เปิดอยู่ (ใช้ cfg.pages ของธีมที่ admin ตั้งไว้) ===== */
+        let _tdCfg = null, _tdBase = 'teacher', _tdWatch = [], _tdStack = [], _tdSig = null;
+        function themeDecorConfig(base, watch) { _tdBase = base; _tdWatch = watch || []; }
+        function themeDecorWatch(id, key) {
+            const el = document.getElementById(id); if (!el || el._tdw) return; el._tdw = 1;
+            let on = false;
+            const sync = () => {
+                const now = !el.classList.contains('hidden') && el.style.display !== 'none';
+                if (now === on) return; on = now;
+                const i = _tdStack.indexOf(key);
+                if (now) { if (i < 0) _tdStack.push(key); } else if (i >= 0) _tdStack.splice(i, 1);
+                themeDecorApply();
+            };
+            new MutationObserver(sync).observe(el, { attributes: true, attributeFilter: ['class', 'style'] });
+            sync();
+        }
+        function themeDecorApply(c, force) {
+            if (c !== undefined) _tdCfg = c;
+            const host = document.getElementById('theme-deco'); if (!host) return;
+            _tdWatch.forEach(w => themeDecorWatch(w[0], w[1]));
+            const key = _tdStack.length ? _tdStack[_tdStack.length - 1] : _tdBase;
+            const eff = _tdCfg ? themePageCfg(_tdCfg, key) : null;
+            const sig = eff ? JSON.stringify([eff.ambient, eff.ambientLevel, eff.accent, eff.nav1, eff.bgGrad, eff.strong, eff.bg].concat(PAGE_FALL_KEYS.map(k => eff[k]), PAGE_FRAME_KEYS.map(k => eff[k]), [eff.stickers, eff.videos])) : '';
+            if (!force && sig === _tdSig) return;
+            _tdSig = sig;
+            renderDecor(eff, host);
+        }
+        function _hx(h) { h = String(h).replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
+        function _mix(a, b, t) { const x = _hx(a), y = _hx(b); return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, '0')).join(''); }
+        function _lum(h) { const c = _hx(h); return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255; }
+        function _rgba(h, a) { return 'rgba(' + _hx(h).join(',') + ',' + a + ')'; }
+        function _hsl(h) {
+            const v = _hx(h).map(x => x / 255), mx = Math.max(v[0], v[1], v[2]), mn = Math.min(v[0], v[1], v[2]), d = mx - mn;
+            let H = 0, S = 0; const L = (mx + mn) / 2;
+            if (d) { S = L > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); H = mx === v[0] ? (v[1] - v[2]) / d + (v[1] < v[2] ? 6 : 0) : mx === v[1] ? (v[2] - v[0]) / d + 2 : (v[0] - v[1]) / d + 4; H *= 60; }
+            return [H, S * 100, L * 100];
+        }
+        function _fromHsl(h, s, l) {
+            h = ((h % 360) + 360) % 360; s = Math.max(0, Math.min(100, s)) / 100; l = Math.max(0, Math.min(100, l)) / 100;
+            const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l), f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+            return '#' + [f(0), f(8), f(4)].map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+        }
+        /* คำนวณความสว่าง/อัตราส่วนความชัด + สีอัตโนมัติของข้อมูลผู้ใช้บนแถบบน */
+        function _rl(h) { const c = _hx(h).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; }
+        function _cr(a, b) { const x = _rl(a), y = _rl(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); }
+        function thNavMid(c) { return _mix(c.nav1, c.nav2, 0.5); }
+        function thOnNav(c) { return c.navText || (_lum(thNavMid(c)) > 0.62 ? '#0f172a' : '#ffffff'); }
+        function thUserVal(c) {
+            if (c.userValue) return c.userValue;
+            const mid = thNavMid(c);
+            if (_cr(c.accent, mid) >= 3) return c.accent;
+            /* สีเน้นกลืนกับแถบบน → ไล่ให้เข้ม/สว่างขึ้นจนอ่านออก (ยังคงโทนสีธีม และไม่เหมือนสีป้าย) */
+            const toward = _lum(mid) > 0.62 ? '#000000' : '#ffffff';
+            for (let t = 0.15; t <= 1.0001; t += 0.1) { const x = _mix(c.accent, toward, t); if (_cr(x, mid) >= 4.5) return x; }
+            return thOnNav(c);
+        }
+        function themeVars(c) {
+            const L = c.mode === 'light';
+            return {
+                '--bg': c.bg, '--surface': c.surface, '--nav1': c.nav1, '--nav2': c.nav2, '--card1': c.card1,
+                '--card2': c.card2 || _mix(c.card1, c.bg, 0.45), '--card3': _mix(c.card1, c.accent, 0.14),
+                '--sidebar': c.sideBg || c.nav2, '--modal': c.modalBg || c.surface, '--accent': c.accent, '--accent2': _mix(c.accent, '#000000', 0.18), '--accent-rgb': _hx(c.accent).join(','),
+                '--on-accent': _lum(c.accent) > 0.55 ? '#0f172a' : '#ffffff',
+                '--on-nav': c.navText || (_lum(_mix(c.nav1, c.nav2, 0.5)) > 0.62 ? '#0f172a' : '#ffffff'),
+                '--on-side': c.sideText || c.navText || (_lum(_mix(c.nav1, c.nav2, 0.5)) > 0.62 ? '#0f172a' : '#ffffff'),
+                '--text': c.text, '--strong': c.strong, '--muted': c.muted || _mix(c.text, c.bg, 0.4),
+                '--panel': L ? 'rgba(15,23,42,0.04)' : 'rgba(0,0,0,0.25)', '--panel2': L ? 'rgba(15,23,42,0.05)' : 'rgba(0,0,0,0.3)',
+                '--line': c.lineColor || (L ? 'rgba(15,23,42,0.14)' : 'rgba(255,255,255,0.12)'),
+                '--input-bg': c.inputBg || (L ? _mix(c.surface, c.text, 0.06) : 'rgba(0,0,0,0.25)')
+            };
+        }
+        /* โหลดฟอนต์จาก Google Fonts ตามที่ธีมเลือก (เรียกทุกครั้งที่ใช้ธีม) */
+        function applyThemeFont(c) {
+            let link = document.getElementById('thxFontLink');
+            const keys = []; [c && c.font, c && c.titleFont].forEach(k => { if (k && THEME_FONTS[k] && keys.indexOf(k) === -1) keys.push(k); });
+            if (!keys.length) { if (link) link.remove(); return; }
+            const href = 'https://fonts.googleapis.com/css2?' + keys.map(k => 'family=' + THEME_FONTS[k][2]).join('&') + '&display=swap';
+            if (!link) { link = document.createElement('link'); link.id = 'thxFontLink'; link.rel = 'stylesheet'; document.head.appendChild(link); }
+            if (link.getAttribute('href') !== href) link.setAttribute('href', href);
+        }
+        /* สร้าง CSS ของธีมหนึ่งธีม  scope = ตัวเลือกหลัก, S = ตัวเลือกของแต่ละหน้า
+           S รองรับ: page nav card side main btn modal mtitle backdrop input drop tile title  (ไม่ใส่ตัวไหน = ข้ามส่วนนั้น) */
+        function themeCss(scope, c, S) {
+            S = S || {};
+            const v = themeVars(c), acc = c.accent, A = (a) => _rgba(acc, a), L = c.mode === 'light';
+            const sel = (list) => list.split(',').map(x => scope + ' ' + x.trim()).join(',');
+            const selp = (list, ps) => list.split(',').map(x => scope + ' ' + x.trim() + ps).join(',');
+            const sub = (list, tags) => list.split(',').map(x => tags.split(',').map(t => scope + ' ' + x.trim() + ' ' + t.trim()).join(',')).join(',');
+            const blurCss = (n) => 'backdrop-filter:blur(' + n + 'px);-webkit-backdrop-filter:blur(' + n + 'px);';
+            const q = (u) => 'url("' + u + '")';
+            const hue = _hsl(acc)[0], acc2 = _fromHsl(hue + 50, _hsl(acc)[1], _hsl(acc)[2]);
+            let css = scope + '{' + Object.keys(v).map(k => k + ':' + v[k] + ';').join('') + '}\n';
+
+            /* ---- พื้นหลัง ---- */
+            const im = [], sz = [], rp = [], ps = [];
+            if (c.pattern) {
+                const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='" + c.patSize + "' height='" + c.patSize + "'><text x='" + Math.round(c.patSize * 0.24) + "' y='" + Math.round(c.patSize * 0.62) + "' font-size='" + Math.round(c.patSize * 0.36) + "' fill-opacity='" + (c.patOpacity / 100) + "'>" + c.pattern + "</text></svg>";
+                im.push('url("data:image/svg+xml,' + encodeURIComponent(svg) + '")'); sz.push(c.patSize + 'px ' + c.patSize + 'px'); rp.push('repeat'); ps.push('0 0');
+            }
+            if (c.bgImage) {
+                const a = c.bgOverlay / 100;
+                im.push('linear-gradient(' + _rgba(c.bg, a) + ',' + _rgba(c.bg, a) + ')'); sz.push('100% 100%'); rp.push('no-repeat'); ps.push('0 0');
+                im.push(q(c.bgImage)); sz.push(c.bgSize === 'tile' ? 'auto' : c.bgSize); rp.push(c.bgSize === 'tile' ? 'repeat' : 'no-repeat'); ps.push('center');
+            }
+            if (c.bgGrad) {
+                im.push(c.bgGradType === 'radial' ? 'radial-gradient(ellipse at 50% 35%,' + (c.bgGrad2 ? c.bgGrad2 + ',' : '') + c.bgGrad + ',' + c.bg + ')' : 'linear-gradient(' + c.bgAngle + 'deg,' + c.bg + ',' + c.bgGrad + (c.bgGrad2 ? ',' + c.bgGrad2 : '') + ')');
+                sz.push('100% 100%'); rp.push('no-repeat'); ps.push('0 0');
+            }
+            if (im.length) css += (S.page ? sel(S.page) : scope) + '{background-image:' + im.join(',') + ';background-size:' + sz.join(',') + ';background-repeat:' + rp.join(',') + ';background-position:' + ps.join(',') + ';background-attachment:' + (c.bgFixed ? 'fixed' : 'scroll') + ';}\n';
+
+            const layer = (a, g1, g2, img) => 'background-image:linear-gradient(' + g1 + ',' + _rgba(g2[0], a) + ',' + _rgba(g2[1], a) + '),' + q(img) + ';background-size:100% 100%,cover;background-position:0 0,center;background-repeat:no-repeat;';
+            if (S.nav && c.navImage) css += sel(S.nav) + '{' + layer(c.navOverlay / 100, '135deg', [c.nav1, c.nav2], c.navImage) + '}\n';
+            if (S.side && c.sideImage) css += sel(S.side) + '{' + layer(c.sideOverlay / 100, '180deg', [c.nav2, c.nav1], c.sideImage) + '}\n';
+            if (S.main && c.mainImage) css += sel(S.main) + '{' + layer(c.mainOverlay / 100, '165deg', [c.surface, c.surface], c.mainImage) + '}\n';
+
+            /* ---- ตัวอักษร / เคอร์เซอร์ / scrollbar ---- */
+            const ff = (k) => THEME_FONTS[k] ? "'" + THEME_FONTS[k][1] + "','Prompt','Kanit',sans-serif" : '';
+            if (c.font) css += scope + '{font-family:' + ff(c.font) + ';}\n' + sel('button,input,select,textarea') + '{font-family:inherit;}\n';
+            if (c.titleFont && S.title) css += sel(S.title) + '{font-family:' + ff(c.titleFont) + ' !important;}\n';
+            if (c.pageTitle && S.title) css += sel(S.title) + '{color:' + c.pageTitle + ' !important;}\n';
+            if (c.titleFx && S.title) {
+                const t = sel(S.title);
+                if (c.titleFx === 'gradient') css += t + '{background:linear-gradient(90deg,' + acc + ',' + acc2 + ');-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent !important;}\n';
+                else if (c.titleFx === 'rainbow') css += t + '{background:linear-gradient(90deg,#ff5f6d,#ffc371,#47e891,#3fa7ff,#c471ed,#ff5f6d);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent !important;animation:thxRainbow 6s linear infinite;}\n';
+                else if (c.titleFx === 'shadow') css += t + '{text-shadow:3px 3px 0 ' + acc + ';}\n';
+                else if (c.titleFx === 'glow') css += t + '{text-shadow:0 0 8px ' + acc + ',0 0 22px ' + acc + ';}\n';
+                else if (c.titleFx === 'outline') css += t + '{text-shadow:-1.5px -1.5px 0 ' + acc + ',1.5px -1.5px 0 ' + acc + ',-1.5px 1.5px 0 ' + acc + ',1.5px 1.5px 0 ' + acc + ';}\n';
+            }
+            if (c.scrollTheme) css += scope + ' *{scrollbar-color:' + acc + ' ' + _rgba(c.bg, 0.4) + ';scrollbar-width:thin;}\n' + scope + ' ::-webkit-scrollbar{width:10px;height:10px;}\n' + scope + ' ::-webkit-scrollbar-thumb{background:' + acc + ';border-radius:99px;border:2px solid transparent;background-clip:padding-box;}\n' + scope + ' ::-webkit-scrollbar-track{background:' + _rgba(c.bg, 0.35) + ';}\n';
+            css += scope + ' ::selection{background:' + acc + ';color:' + v['--on-accent'] + ';}\n';
+            if (c.cursor) {
+                const svg = "<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32'><text x='2' y='26' font-size='24'>" + c.cursor + "</text></svg>";
+                css += scope + ',' + sel('*') + '{cursor:url("data:image/svg+xml,' + encodeURIComponent(svg) + '") 4 4,auto !important;}\n';
+            }
+
+            /* ---- การ์ด ---- */
+            if (S.card) {
+                const cr = [], noImg = !c.cardImage, k = sel(S.card);
+                if (c.cardImage) cr.push(layer(c.cardOverlay / 100, '165deg', [c.card1, v['--card2']], c.cardImage));
+                if (c.radius >= 0) cr.push('border-radius:' + c.radius + 'px;');
+                if (c.cardBorder) cr.push('border-style:' + c.cardBorder + ';' + (c.cardBorder !== 'none' ? 'border-width:2px;' : ''));
+                const st = c.cardStyle;
+                if (st === 'glass') { const b = c.glassBlur || 14; if (noImg) cr.push('background:' + (L ? 'rgba(255,255,255,.55)' : 'rgba(255,255,255,.08)') + ' !important;'); cr.push('backdrop-filter:blur(' + b + 'px);-webkit-backdrop-filter:blur(' + b + 'px);border:1px solid ' + (L ? 'rgba(255,255,255,.7)' : 'rgba(255,255,255,.22)') + ' !important;'); }
+                else if (st === 'flat') { if (noImg) cr.push('background:' + c.card1 + ' !important;'); cr.push('box-shadow:none !important;border-color:transparent !important;'); }
+                else if (st === 'neon') { if (noImg) cr.push('background:' + _mix(c.card1, '#000000', 0.35) + ' !important;'); cr.push('border:2px solid ' + acc + ' !important;box-shadow:0 0 14px ' + A(0.7) + ',inset 0 0 14px ' + A(0.22) + ' !important;'); }
+                else if (st === 'paper') { if (noImg) cr.push('background-color:' + c.card1 + ' !important;background-image:repeating-linear-gradient(0deg,transparent 0,transparent 23px,' + A(0.16) + ' 23px,' + A(0.16) + ' 24px) !important;'); cr.push('border-left:5px solid ' + acc + ' !important;'); }
+                else if (st === 'sticker') { cr.push('border:3px solid ' + c.strong + ' !important;box-shadow:5px 5px 0 ' + acc + ' !important;'); }
+                if (noImg) { /* พื้นการ์ดจาง / สีปลายไล่เอง */
+                    const ca = c.cardAlpha / 100;
+                    if (st === 'flat' && ca < 1) cr.push('background:' + _rgba(c.card1, ca) + ' !important;');
+                    else if (st === 'neon' && ca < 1) cr.push('background:' + _rgba(_mix(c.card1, '#000000', 0.35), ca) + ' !important;');
+                    else if (st === 'paper' && ca < 1) cr.push('background-color:' + _rgba(c.card1, ca) + ' !important;');
+                    else if ((st === '' || st === 'sticker') && (ca < 1 || c.card2)) cr.push('background:linear-gradient(165deg,' + _rgba(c.card1, ca) + ',' + _rgba(c.card2 || v['--card2'], ca) + ') !important;');
+                }
+                if (c.cardBorderColor) cr.push('border-color:' + c.cardBorderColor + ' !important;');
+                if (c.cardBorderW > 0) cr.push('border-width:' + c.cardBorderW + 'px !important;border-style:' + (c.cardBorder && c.cardBorder !== 'none' ? c.cardBorder : 'solid') + ' !important;');
+                if (c.cardShadow > 0 && ['flat', 'neon', 'sticker'].indexOf(st) === -1) cr.push('box-shadow:0 ' + Math.round(c.cardShadow / 5) + 'px ' + Math.round(c.cardShadow / 1.4) + 'px ' + _rgba(c.cardShadowColor || '#000000', (c.cardShadow / 220).toFixed(2)) + ';');
+                if (c.glow) cr.push('box-shadow:0 0 18px rgba(' + v['--accent-rgb'] + ',0.35);');
+                if (c.cardHover) cr.push('transition:transform .22s,box-shadow .22s;');
+                if (cr.length) css += k + '{' + cr.join('') + '}\n';
+                if (c.cardHover === 'lift') css += selp(S.card, ':hover') + '{transform:translateY(-6px);}\n';
+                else if (c.cardHover === 'tilt') css += selp(S.card, ':hover') + '{transform:rotate(-1.6deg) scale(1.025);}\n';
+                else if (c.cardHover === 'glow') css += selp(S.card, ':hover') + '{box-shadow:0 0 24px ' + A(0.7) + ' !important;}\n';
+                else if (c.cardHover === 'bounce') css += selp(S.card, ':hover') + '{animation:thxBounce .55s ease;}\n';
+                else if (c.cardHover === 'zoom') css += selp(S.card, ':hover') + '{transform:scale(1.04);}\n';
+                if (c.cardText) css += k + '{color:' + c.cardText + ' !important;}\n';
+                if (c.cardTitle) css += sub(S.card, 'b,strong,h1,h2,h3,h4,h5') + '{color:' + c.cardTitle + ' !important;}\n';
+            }
+            if (S.main && c.radius >= 0) css += sel(S.main) + '{border-radius:' + Math.min(c.radius + 4, 36) + 'px;}\n';
+            if (S.tile) {
+                const tr = [];
+                if (c.radius >= 0) tr.push('border-radius:' + c.radius + 'px;');
+                if (c.cardHover) tr.push('transition:transform .2s;');
+                if (tr.length) css += sel(S.tile) + '{' + tr.join('') + '}\n';
+                if (c.cardHover) css += selp(S.tile, ':hover') + '{transform:translateY(-4px);}\n';
+            }
+
+            /* ---- ความโปร่งใส / เบลอ / สีเสริม / สีตัวอักษรของแถบและกล่องหลัก ---- */
+            if (S.nav) {
+                const r = [];
+                if (c.navAlpha < 100 && !c.navImage) r.push('background:linear-gradient(135deg,' + _rgba(c.nav1, c.navAlpha / 100) + ',' + _rgba(c.nav2, c.navAlpha / 100) + ') !important;');
+                if (c.navBlur > 0) r.push(blurCss(c.navBlur));
+                if (c.navText) r.push('color:' + c.navText + ' !important;');
+                if (r.length) css += sel(S.nav) + '{' + r.join('') + '}\n';
+            }
+            if (S.side) {
+                const r = [], sb = c.sideBg || c.nav2;
+                if (!c.sideImage && (c.sideAlpha < 100 || c.sideBg)) r.push('background:' + (c.sideAlpha < 100 ? _rgba(sb, c.sideAlpha / 100) : sb) + ' !important;');
+                if (c.sideBlur > 0) r.push(blurCss(c.sideBlur));
+                if (c.sideText) r.push('color:' + c.sideText + ' !important;');
+                if (r.length) css += sel(S.side) + '{' + r.join('') + '}\n';
+            }
+            if (S.main) {
+                const r = [];
+                if (c.mainAlpha < 100 && !c.mainImage) r.push('background:' + _rgba(c.surface, c.mainAlpha / 100) + ' !important;');
+                if (c.mainBlur > 0) r.push(blurCss(c.mainBlur));
+                if (c.lineColor) r.push('border-color:' + c.lineColor + ' !important;');
+                if (r.length) css += sel(S.main) + '{' + r.join('') + '}\n';
+            }
+            /* ---- สีละเอียด: ชื่อหน้า / กล่องข้อมูลผู้ใช้ / ปุ่มเมนู-กลับหน้าหลัก / หัวข้อแถบข้าง / ชื่อวิชา / ลิงก์ / ป้ายช่องกรอก ---- */
+            {
+                const mid = thNavMid(c), onNav = thOnNav(c), lightNav = _lum(mid) > 0.62;
+                if (S.navTitle && c.navTitle) css += sel(S.navTitle) + '{color:' + c.navTitle + ' !important;}\n';
+                if (S.user) {
+                    const r = [], ub = c.userBg || (lightNav ? 'rgba(15,23,42,0.06)' : ''), ul = c.userLine || (lightNav ? 'rgba(15,23,42,0.16)' : '');
+                    if (ub) r.push('background:' + ub + ' !important;');
+                    if (ul) r.push('border-color:' + ul + ' !important;');
+                    if (c.userSep) r.push('color:' + c.userSep + ' !important;');
+                    if (r.length) css += sel(S.user) + '{' + r.join('') + '}\n';
+                }
+                if (S.userLabel) { const lc = c.userLabel || (c.userSep ? onNav : ''); if (lc) css += sel(S.userLabel) + '{color:' + lc + ' !important;}\n'; }
+                if (S.userVal) css += sel(S.userVal) + '{color:' + thUserVal(c) + ' !important;}\n';
+                if (S.home) {
+                    const r = [], hb = c.homeBg || (lightNav ? 'rgba(15,23,42,0.08)' : '');
+                    if (hb) r.push('background:' + hb + ' !important;');
+                    if (lightNav && !c.homeBg) r.push('border-color:rgba(15,23,42,0.2) !important;');
+                    r.push('color:' + (c.homeText || onNav) + ' !important;');
+                    css += sel(S.home) + '{' + r.join('') + '}\n';
+                }
+                if (S.menu && (c.menuBg || c.menuText)) css += sel(S.menu) + '{' + (c.menuBg ? 'background:' + c.menuBg + ' !important;' : '') + (c.menuText ? 'color:' + c.menuText + ' !important;' : '') + '}\n';
+                if (S.sideHead && (c.sideTitle || c.sideText)) css += sel(S.sideHead) + '{color:' + (c.sideTitle || c.sideText) + ' !important;}\n';
+                if (S.sub && c.subject) css += sel(S.sub) + '{color:' + c.subject + ' !important;}\n';
+                if (S.lnk && c.linkText) css += sel(S.lnk) + '{color:' + c.linkText + ' !important;}\n';
+                if (S.lbl && c.label) css += sel(S.lbl) + '{color:' + c.label + ' !important;}\n';
+            }
+            if (c.textShadow) {
+                const X = L ? '#ffffff' : '#000000';
+                const tsh = { soft: L ? '0 1px 2px rgba(255,255,255,.8)' : '0 1px 3px rgba(0,0,0,.5)', strong: L ? '0 1px 3px #fff,0 0 6px rgba(255,255,255,.9)' : '0 2px 5px rgba(0,0,0,.85),0 0 2px rgba(0,0,0,.9)', glow: '0 0 6px ' + A(0.9) + ',0 0 14px ' + A(0.5), outline: '-1px -1px 0 ' + X + ',1px -1px 0 ' + X + ',-1px 1px 0 ' + X + ',1px 1px 0 ' + X }[c.textShadow];
+                ['nav', 'side', 'main', 'card', 'modal'].forEach(k => { if (S[k]) css += sel(S[k]) + '{text-shadow:' + tsh + ';}\n'; });
+                if (S.title && (c.titleFx === 'gradient' || c.titleFx === 'rainbow')) css += sel(S.title) + '{text-shadow:none;}\n';
+            }
+
+            /* ---- ปุ่ม ---- */
+            if (S.btn) {
+                const r = [], bc = c.btnColor || acc, bc2 = _mix(bc, '#000000', 0.18), on = _lum(bc) > 0.55 ? '#0f172a' : '#ffffff';
+                if (c.btnStyle === 'gradient') r.push('background:linear-gradient(135deg,' + _mix(bc, '#ffffff', 0.28) + ',' + bc2 + ') !important;color:' + on + ' !important;border-color:transparent !important;');
+                else if (c.btnStyle === 'outline') r.push('background:transparent !important;color:' + bc + ' !important;border:2px solid ' + bc + ' !important;');
+                else if (c.btnStyle === 'soft') r.push('background:' + _rgba(bc, 0.18) + ' !important;color:' + bc + ' !important;border:1px solid ' + _rgba(bc, 0.4) + ' !important;');
+                else if (c.btnStyle === 'glass') r.push('background:rgba(255,255,255,.14) !important;backdrop-filter:blur(8px);color:' + c.strong + ' !important;border:1px solid rgba(255,255,255,.35) !important;');
+                else if (c.btnColor) r.push('background:' + bc + ' !important;color:' + on + ' !important;');
+                if (c.btnColor2 && (!c.btnStyle || c.btnStyle === 'gradient')) r.push('background:linear-gradient(135deg,' + bc + ',' + c.btnColor2 + ') !important;color:' + on + ' !important;border-color:transparent !important;');
+                if (c.btnText) r.push('color:' + c.btnText + ' !important;');
+                if (c.btnRadius >= 0) r.push('border-radius:' + c.btnRadius + 'px !important;');
+                if (c.btnShadow === 'soft') r.push('box-shadow:0 6px 16px ' + _rgba(bc, 0.4) + ' !important;');
+                else if (c.btnShadow === 'glow') r.push('box-shadow:0 0 18px ' + bc + ',0 0 4px ' + bc + ' !important;');
+                else if (c.btnShadow === 'pop3d') r.push('box-shadow:0 5px 0 ' + bc2 + ',0 9px 16px rgba(0,0,0,.28) !important;');
+                if (r.length || c.btnHover) r.push('transition:transform .18s,box-shadow .18s,filter .18s;');
+                if (r.length) css += sel(S.btn) + '{' + r.join('') + '}\n';
+                const hv = selp(S.btn, ':hover:not(:disabled)');
+                if (c.btnHover === 'lift') css += hv + '{transform:translateY(-3px);filter:brightness(1.08);}\n';
+                else if (c.btnHover === 'pulse') css += hv + '{animation:thxPulse .8s ease-in-out infinite;}\n';
+                else if (c.btnHover === 'wiggle') css += hv + '{animation:thxWiggle .5s ease-in-out infinite;}\n';
+                else if (c.btnHover === 'shine') css += hv + '{animation:thxShine .9s ease-in-out infinite;}\n';
+                if (c.btnShadow === 'pop3d') css += selp(S.btn, ':active:not(:disabled)') + '{transform:translateY(4px);box-shadow:0 1px 0 ' + bc2 + ' !important;}\n';
+            }
+            /* ---- ช่องกรอก ---- */
+            if (S.input && c.inputStyle) {
+                const i = sel(S.input);
+                if (c.inputStyle === 'underline') css += i + '{border:0 !important;border-bottom:2px solid ' + acc + ' !important;border-radius:0 !important;background:transparent !important;}\n';
+                else if (c.inputStyle === 'pill') css += i + '{border-radius:999px !important;padding-left:18px !important;padding-right:18px !important;}\n';
+                else if (c.inputStyle === 'soft') css += i + '{background:' + A(0.1) + ' !important;border:1px solid transparent !important;}\n';
+                css += selp(S.input, ':focus') + '{outline:none !important;border-color:' + acc + ' !important;box-shadow:0 0 0 3px ' + A(0.28) + (c.inputStyle === 'glow' ? ',0 0 16px ' + A(0.6) : '') + ' !important;}\n';
+                if (c.inputStyle === 'glow') css += i + '{box-shadow:0 0 8px ' + A(0.35) + ';}\n';
+            }
+            if (S.input && (c.inputBg || c.inputAlpha < 100 || c.inputText || c.placeholder)) {
+                const r = [];
+                if (c.inputBg || c.inputAlpha < 100) {
+                    const ia = c.inputAlpha / 100, ib = c.inputBg || (L ? _mix(c.surface, c.text, 0.06) : '#000000');
+                    r.push('background:' + _rgba(ib, (c.inputBg || L) ? ia : 0.25 * ia) + ' !important;');
+                }
+                if (c.inputText) r.push('color:' + c.inputText + ' !important;');
+                if (r.length) css += sel(S.input) + '{' + r.join('') + '}\n';
+                if (c.placeholder) css += selp(S.input, '::placeholder') + '{color:' + c.placeholder + ' !important;opacity:1;}\n';
+            }
+            /* ---- หน้าต่าง (สร้างกล่องงาน / ส่งงาน) ---- */
+            if (S.modal) {
+                const m = sel(S.modal), r = [];
+                if (c.modalRadius >= 0) r.push('border-radius:' + c.modalRadius + 'px !important;');
+                if (c.modalBorder === 'solid') r.push('border:3px solid ' + acc + ' !important;');
+                else if (c.modalBorder === 'dashed') r.push('border:3px dashed ' + acc + ' !important;');
+                else if (c.modalBorder === 'dotted') r.push('border:4px dotted ' + acc + ' !important;');
+                else if (c.modalBorder === 'double') r.push('border:6px double ' + acc + ' !important;');
+                else if (c.modalBorder === 'neon') r.push('border:2px solid ' + acc + ' !important;box-shadow:0 0 26px ' + A(0.8) + ',inset 0 0 18px ' + A(0.25) + ' !important;');
+                if (c.modalGlow && c.modalBorder !== 'neon') r.push('box-shadow:0 0 34px ' + A(0.55) + ',0 20px 60px rgba(0,0,0,.45) !important;');
+                if (c.modalGlass) r.push('background:' + _rgba(c.modalBg || c.surface, 0.72) + ' !important;backdrop-filter:blur(' + (c.glassBlur || 14) + 'px);-webkit-backdrop-filter:blur(' + (c.glassBlur || 14) + 'px);');
+                if (c.modalAlpha < 100) r.push('background:' + _rgba(c.modalBg || c.surface, c.modalAlpha / 100) + ' !important;' + (!c.modalGlass && c.glassBlur > 0 ? blurCss(c.glassBlur) : ''));
+                else if (c.modalBg && !c.modalGlass) r.push('background:' + c.modalBg + ' !important;');
+                if (c.modalText) r.push('color:' + c.modalText + ' !important;');
+                if (c.lineColor && !c.modalBorder) r.push('border-color:' + c.lineColor + ' !important;');
+                const an = { pop: 'thxPop .45s cubic-bezier(.2,1.3,.4,1) both', slide: 'thxSlide .4s ease-out both', drop: 'thxDrop .8s ease-out both', zoom: 'thxZoom .35s ease-out both', flip: 'thxFlip .55s ease-out both' }[c.modalAnim];
+                if (an) r.push('animation:' + an + ';');
+                if (r.length) css += m + '{' + r.join('') + '}\n';
+                if (c.modalDeco) {
+                    const e = '"' + c.modalDeco + '"', base = 'position:absolute;font-size:38px;line-height:1;pointer-events:none;z-index:3;', p = c.modalDecoPos;
+                    css += selp(S.modal, '::before') + '{content:' + e + ';' + base + (p === 'tr' ? 'top:-16px;right:-8px;' : 'top:-16px;left:-8px;') + '}\n';
+                    if (p === 'top') css += selp(S.modal, '::after') + '{content:' + e + ';' + base + 'top:-16px;right:-8px;}\n';
+                    else if (p === 'diag') css += selp(S.modal, '::after') + '{content:' + e + ';' + base + 'bottom:-16px;right:-8px;}\n';
+                }
+            }
+            if (S.mtitle && c.modalHead) {
+                const t = sel(S.mtitle);
+                if (c.modalHead === 'gradient') css += t + '{background:linear-gradient(90deg,' + A(0.85) + ',transparent) !important;color:' + v['--on-accent'] + ' !important;padding:8px 14px !important;border-radius:12px !important;border-left:0 !important;}\n';
+                else if (c.modalHead === 'underline') css += t + '{border-left:0 !important;padding-left:0 !important;border-bottom:3px solid ' + acc + ' !important;padding-bottom:6px !important;}\n';
+                else if (c.modalHead === 'pill') css += t + '{display:inline-block !important;background:' + acc + ' !important;color:' + v['--on-accent'] + ' !important;border-left:0 !important;padding:6px 20px !important;border-radius:999px !important;}\n';
+            }
+            if (S.mtitle && c.modalTitle) css += sel(S.mtitle) + '{color:' + c.modalTitle + ' !important;}\n';
+            if (S.backdrop && (c.backdropColor || c.backdropBlur > 0)) {
+                const b = [];
+                if (c.backdropColor) b.push('background:' + _rgba(c.backdropColor, c.backdropOpacity / 100) + ' !important;');
+                if (c.backdropBlur > 0) b.push('backdrop-filter:blur(' + c.backdropBlur + 'px);-webkit-backdrop-filter:blur(' + c.backdropBlur + 'px);');
+                css += sel(S.backdrop) + '{' + b.join('') + '}\n';
+            }
+            if (S.drop && (c.dropStyle || c.dropAnim)) {
+                const d = [];
+                if (c.dropStyle === 'glow') d.push('border:2px dashed ' + acc + ' !important;box-shadow:0 0 18px ' + A(0.45) + ',inset 0 0 18px ' + A(0.12) + ' !important;');
+                else if (c.dropStyle) d.push('border:3px ' + c.dropStyle + ' ' + acc + ' !important;');
+                if (c.dropAnim === 'pulse') d.push('animation:thxDropPulse 1.8s ease-in-out infinite;');
+                else if (c.dropAnim === 'wiggle') d.push('animation:thxWobble 2.6s ease-in-out infinite;');
+                css += sel(S.drop) + '{' + d.join('') + '}\n';
+                css += '@keyframes thxDropPulse{0%,100%{box-shadow:0 0 0 0 ' + A(0.5) + '}50%{box-shadow:0 0 0 10px ' + A(0) + '}}\n';
+            }
+            /* ---- แอนิเมชันกลาง (ใช้ร่วมกัน) ---- */
+            css += '.anim-bounce{animation:thxBounce 1.1s ease-in-out infinite;}.anim-wiggle{animation:thxWiggle 1.2s ease-in-out infinite;}.anim-heart{animation:thxHeart 1.3s ease-in-out infinite;}.anim-swing{animation:thxSwing 2.4s ease-in-out infinite;transform-origin:50% 0;}.anim-tada{animation:thxTada 2.2s ease-in-out infinite;}.anim-shake{animation:thxShake .9s ease-in-out infinite;}.anim-rubber{animation:thxRubber 1.6s ease-in-out infinite;}.anim-flash{animation:thxFlash 1.6s ease-in-out infinite;}.anim-drift{animation:thxDrift 5s ease-in-out infinite;}\n' +
+                '@keyframes thxShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}\n' +
+                '@keyframes thxRubber{0%,100%{transform:scale(1,1)}30%{transform:scale(1.25,.75)}40%{transform:scale(.75,1.25)}50%{transform:scale(1.15,.85)}65%{transform:scale(.95,1.05)}75%{transform:scale(1.05,.95)}}\n' +
+                '@keyframes thxFlash{0%,50%,100%{opacity:1}25%,75%{opacity:.15}}\n' +
+                '@keyframes thxDrift{0%,100%{transform:translateX(-14px)}50%{transform:translateX(14px)}}\n' +
+                '@keyframes thxBounce{0%,100%{transform:translateY(0)}40%{transform:translateY(-16px)}60%{transform:translateY(-6px)}}\n' +
+                '@keyframes thxWiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}\n' +
+                '@keyframes thxWobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-.7deg)}75%{transform:rotate(.7deg)}}\n' +
+                '@keyframes thxHeart{0%,100%{transform:scale(1)}15%{transform:scale(1.18)}30%{transform:scale(1)}45%{transform:scale(1.12)}60%{transform:scale(1)}}\n' +
+                '@keyframes thxSwing{0%,100%{transform:rotate(12deg)}50%{transform:rotate(-12deg)}}\n' +
+                '@keyframes thxTada{0%,70%,100%{transform:scale(1)}10%,20%{transform:scale(.9) rotate(-4deg)}30%,50%{transform:scale(1.12) rotate(4deg)}40%,60%{transform:scale(1.12) rotate(-4deg)}}\n' +
+                '@keyframes thxPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}\n' +
+                '@keyframes thxShine{0%,100%{filter:brightness(1)}40%{filter:brightness(1.4) saturate(1.3)}}\n' +
+                '@keyframes thxRainbow{to{background-position:300% 0}}\n' +
+                '@keyframes thxPop{0%{transform:scale(.55);opacity:0}60%{transform:scale(1.06);opacity:1}100%{transform:scale(1)}}\n' +
+                '@keyframes thxSlide{0%{transform:translateY(70px);opacity:0}100%{transform:none;opacity:1}}\n' +
+                '@keyframes thxDrop{0%{transform:translateY(-140px);opacity:0}50%{transform:translateY(0);opacity:1}65%{transform:translateY(-22px)}80%{transform:translateY(0)}90%{transform:translateY(-7px)}100%{transform:translateY(0)}}\n' +
+                '@keyframes thxZoom{0%{transform:scale(1.5);opacity:0}100%{transform:scale(1);opacity:1}}\n' +
+                '@keyframes thxFlip{0%{transform:perspective(900px) rotateX(-80deg);opacity:0}100%{transform:perspective(900px) rotateX(0);opacity:1}}\n' +
+                '@media (prefers-reduced-motion: reduce){' + scope + ' *{animation:none !important;transition:none !important;}}\n';
+            return css;
+        }
+
+        /* ---------- เครื่องมือเอฟเฟกต์ (Web Animations API) ---------- */
+        function _thxReduce() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+        function _thxAbs(host) { return !!(host && host.closest && host.closest('[data-thx-abs]')); }
+        function _thxRnd(i, n) { return (((i * 9301 + 49297) * (n + 7)) % 233280) / 233280; } // สุ่มคงที่ ตำแหน่งไม่เปลี่ยนทุกครั้งที่วาด
+        function _thxBox(abs, z) { const d = document.createElement('div'); d.style.cssText = 'position:' + (abs ? 'absolute' : 'fixed') + ';inset:0;overflow:hidden;pointer-events:none;z-index:' + z + ';'; return d; }
+        function _thxSize(host, abs) {
+            if (abs) { const r = host.closest('[data-thx-abs]'); return [r.offsetWidth, r.offsetHeight]; }
+            return [window.innerWidth, window.innerHeight];
+        }
+        function _thxAmbient(c, host, abs, reduce) {
+            if (!c.ambient) return;
+            const sz = _thxSize(host, abs), W = sz[0], H = sz[1], lv = c.ambientLevel / 100, acc = c.accent;
+            const box = _thxBox(abs, abs ? 0 : -1); box.className = 'thx-amb';
+            const go = (el, kf, o) => { if (!reduce && el.animate) el.animate(kf, Object.assign({ iterations: Infinity, easing: 'ease-in-out' }, o)); };
+            const h = _hsl(acc)[0];
+            if (c.ambient === 'aurora') {
+                const cols = [acc, c.nav1, c.bgGrad || _fromHsl(h + 60, 80, 60)];
+                cols.forEach((col, i) => {
+                    const d = document.createElement('div'), s = 55 + _thxRnd(i, 1) * 25;
+                    d.style.cssText = 'position:absolute;width:' + s + '%;height:' + s + '%;left:' + (_thxRnd(i, 2) * 60 - 10) + '%;top:' + (_thxRnd(i, 3) * 60 - 15) + '%;border-radius:50%;filter:blur(40px);background:radial-gradient(circle,' + _rgba(col, Math.min(0.9, 0.7 * lv + 0.1)) + ' 0%,transparent 65%);';
+                    go(d, [{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(' + (i % 2 ? -14 : 14) + '%,' + (i === 1 ? 12 : -10) + '%) scale(1.25)' }], { duration: 15000 + i * 4500, direction: 'alternate' });
+                    box.appendChild(d);
+                });
+            } else if (c.ambient === 'stars') {
+                const n = Math.round(14 + lv * 36);
+                for (let i = 0; i < n; i++) {
+                    const s = document.createElement('span'); s.textContent = '✦';
+                    s.style.cssText = 'position:absolute;left:' + (_thxRnd(i, 1) * 98) + '%;top:' + (_thxRnd(i, 2) * 96) + '%;font-size:' + (6 + _thxRnd(i, 3) * 12) + 'px;color:' + c.strong + ';opacity:.2;';
+                    go(s, [{ opacity: 0.1 }, { opacity: 0.95 }, { opacity: 0.1 }], { duration: 1800 + _thxRnd(i, 4) * 3200, delay: -_thxRnd(i, 5) * 3000 });
+                    box.appendChild(s);
+                }
+            } else if (c.ambient === 'bokeh') {
+                const n = Math.round(8 + lv * 14);
+                for (let i = 0; i < n; i++) {
+                    const d = document.createElement('div'), s = 28 + _thxRnd(i, 1) * 90;
+                    d.style.cssText = 'position:absolute;left:' + (_thxRnd(i, 2) * 96) + '%;top:' + H + 'px;width:' + s + 'px;height:' + s + 'px;border-radius:50%;background:' + _rgba(acc, 0.16) + ';border:1px solid ' + _rgba(acc, 0.3) + ';';
+                    go(d, [{ transform: 'translateY(0)', opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 1, offset: 0.85 }, { transform: 'translateY(' + (-(H + s + 40)) + 'px)', opacity: 0 }], { duration: 14000 + _thxRnd(i, 3) * 16000, delay: -_thxRnd(i, 4) * 20000, easing: 'linear' });
+                    box.appendChild(d);
+                }
+            } else if (c.ambient === 'fireflies') {
+                const n = Math.round(10 + lv * 20);
+                for (let i = 0; i < n; i++) {
+                    const d = document.createElement('div');
+                    d.style.cssText = 'position:absolute;left:' + (_thxRnd(i, 1) * 96) + '%;top:' + (_thxRnd(i, 2) * 94) + '%;width:6px;height:6px;border-radius:50%;background:#fff3a0;box-shadow:0 0 8px 3px rgba(255,235,130,.7);';
+                    const dx = (_thxRnd(i, 3) - 0.5) * 160, dy = (_thxRnd(i, 4) - 0.5) * 160, dx2 = (_thxRnd(i, 5) - 0.5) * 160, dy2 = (_thxRnd(i, 6) - 0.5) * 160;
+                    go(d, [{ transform: 'translate(0,0)', opacity: 0.2 }, { transform: 'translate(' + dx + 'px,' + dy + 'px)', opacity: 1 }, { transform: 'translate(' + dx2 + 'px,' + dy2 + 'px)', opacity: 0.3 }, { transform: 'translate(0,0)', opacity: 0.2 }], { duration: 6000 + _thxRnd(i, 7) * 6000, delay: -_thxRnd(i, 8) * 8000 });
+                    box.appendChild(d);
+                }
+            }
+            host.appendChild(box);
+        }
+        function _thxFall(c, host, abs, reduce) {
+            if (!c.fall) return;
+            const sym = Array.from(c.fall), sz = _thxSize(host, abs), W = sz[0], H = sz[1];
+            /* 2 ชั้น: หน้า (ลอยเหนือกล่อง) / หลัง (อยู่หลังกล่องด้านหน้า เห็นผ่านช่องว่างและกล่องโปร่งใส) */
+            const mk = (back) => { const l = _thxBox(abs, back ? (abs ? 0 : -1) : (abs ? 5 : 550)); l.className = 'deco-fall-v4' + (back ? ' deco-fall-back' : ''); return l; };
+            let front = null, back = null;
+            const x1 = Math.min(c.fallX1, c.fallX2), x2 = Math.max(c.fallX1, c.fallX2);
+            const span = Math.max(0, (x2 - x1) / 100 * (W - 30));
+            const vr = c.fallSizeVar / 100;
+            for (let i = 0; i < c.fallCount; i++) {
+                const isBack = c.fallLayer === 'back' || (c.fallLayer === 'mix' && _thxRnd(i, 9) * 100 < c.fallBackPct);
+                let fl;
+                if (isBack) { if (!back) back = mk(true); fl = back; } else { if (!front) front = mk(false); fl = front; }
+                const x0 = Math.round(x1 / 100 * (W - 30) + _thxRnd(i, 1) * span);
+                const sizeK = (1 - vr * 0.4) + _thxRnd(i, 2) * vr * 0.8 + 0.0;
+                const px = Math.max(6, Math.round(c.fallSize * sizeK * (isBack && c.fallBackSmall ? 0.7 : 1)));
+                const op = (isBack ? c.fallBackOpacity : c.fallOpacity) / 100, bl = isBack ? Math.max(c.fallBlur, c.fallBackBlur) : c.fallBlur;
+                const p = document.createElement('span');
+                p.textContent = sym[i % sym.length];
+                p.style.cssText = 'position:absolute;top:0;left:' + x0 + 'px;line-height:1;opacity:' + op + ';font-size:' + px + 'px;' +
+                    (bl > 0 ? 'filter:blur(' + bl + 'px);' : '') + (c.fallGlow ? 'text-shadow:0 0 8px ' + c.fallGlow + ',0 0 16px ' + c.fallGlow + ';' : '');
+                fl.appendChild(p);
+                if (reduce || !p.animate) continue;
+                const dur = c.fallSpeed * (0.7 + _thxRnd(i, 3) * 0.8) * 1000 * (isBack && c.fallBackSmall ? 1.25 : 1), delay = -_thxRnd(i, 4) * c.fallSpeed * 1000;
+                const y0 = c.fallDir === 'up' ? H + 40 : -40, y1 = c.fallDir === 'up' ? -40 : H + 40;
+                const drift = (c.fallDir === 'diag' ? W * 0.18 : 0) + W * c.fallWind / 100, spin = c.fallSpin ? (_thxRnd(i, 5) > 0.5 ? 360 : -360) : 0;
+                const kf = [];
+                for (let s = 0; s <= 6; s++) {
+                    const t = s / 6, sway = c.fallSway ? Math.sin(t * Math.PI * 3 + i) * 28 : 0;
+                    kf.push({ transform: 'translate(' + Math.round(drift * t + sway) + 'px,' + Math.round(y0 + (y1 - y0) * t) + 'px) rotate(' + Math.round(spin * t) + 'deg)', offset: t });
+                }
+                p.animate(kf, { duration: dur, delay: delay, iterations: Infinity, easing: 'linear' });
+            }
+            if (back) host.appendChild(back);
+            if (front) host.appendChild(front);
+        }
+        function _thxFrame(c, host, abs) {
+            if (!c.frame) return;
+            const col = c.frameColor || c.accent, w = c.frameWidth, f = _thxBox(abs, abs ? 7 : 580);
+            f.style.overflow = 'visible'; f.style.boxSizing = 'border-box';
+            if (c.frame === 'neon') f.style.cssText += 'border:' + Math.max(2, w - 2) + 'px solid ' + col + ';box-shadow:0 0 18px ' + col + ',inset 0 0 18px ' + col + ';';
+            else if (c.frame === 'double') f.style.cssText += 'border:' + Math.max(w, 4) + 'px double ' + col + ';';
+            else f.style.cssText += 'border:' + w + 'px ' + c.frame + ' ' + col + ';';
+            if (c.frameEmoji) {
+                [['top:4px;left:8px'], ['top:4px;right:8px'], ['bottom:4px;left:8px'], ['bottom:4px;right:8px']].forEach(p => {
+                    const e = document.createElement('span'); e.textContent = c.frameEmoji;
+                    e.style.cssText = 'position:absolute;font-size:' + (26 + w) + 'px;line-height:1;' + p[0] + ';';
+                    f.appendChild(e);
+                });
+            }
+            host.appendChild(f);
+        }
+        const THX_ANIM_BASE = { float: 3, sway: 2.6, spin: 12, pulse: 2, bounce: 1.1, wiggle: 1.2, heart: 1.3, swing: 2.4, tada: 2.2, shake: 0.9, rubber: 1.6, flash: 1.6, drift: 5 };
+        /* วางอิสระ: x,y เป็น % ของหน้า (จุดกึ่งกลางสติกเกอร์) */
+        function _thxFree(o, s) { o.style.width = s.size + 'px'; o.style.left = s.x + '%'; o.style.top = s.y + '%'; return 'translate(-50%,-50%)'; }
+        function _thxPlace(o, pos, off, w) {
+            const st = o.style, vv = pos.charAt(0), hh = pos.charAt(1), of = off + 'px';
+            st.width = w + 'px';
+            if (vv === 't') st.top = of; else if (vv === 'b') st.bottom = of; else st.top = '50%';
+            if (hh === 'l') st.left = of; else if (hh === 'r') st.right = of; else st.left = '50%';
+            return 'translate(' + (hh === 'c' ? '-50%' : '0') + ',' + (vv === 'm' ? '-50%' : '0') + ')';
+        }
+        /* ---------- วิดีโอ: ไฟล์ .mp4/.webm หรือ YouTube (เล่นอัตโนมัติแบบปิดเสียง) ---------- */
+        function _thxYt(u) { const m = String(u || '').match(/(?:youtu\.be\/|youtube(?:-nocookie)?\.com\/(?:watch\?(?:[^#]*&)?v=|shorts\/|embed\/|live\/))([\w-]{11})/); return m ? m[1] : ''; }
+        function _thxVidEl(v) {
+            const yt = _thxYt(v.url);
+            if (yt) {
+                const f = document.createElement('iframe');
+                f.src = 'https://www.youtube-nocookie.com/embed/' + yt + '?autoplay=1&mute=1&controls=0&playsinline=1&rel=0&modestbranding=1&disablekb=1&iv_load_policy=3' + (v.loop ? '&loop=1&playlist=' + yt : '');
+                f.setAttribute('allow', 'autoplay; encrypted-media'); f.setAttribute('tabindex', '-1'); f.setAttribute('title', 'video');
+                f.setAttribute('referrerpolicy', 'strict-origin-when-cross-origin');
+                f.style.cssText = 'border:0;pointer-events:none;';
+                return f;
+            }
+            const e = document.createElement('video');
+            e.muted = true; e.defaultMuted = true; e.loop = !!v.loop; e.autoplay = true; e.playsInline = true; e.preload = 'auto';
+            e.setAttribute('muted', ''); e.setAttribute('playsinline', '');
+            e.src = v.url;
+            e.style.cssText = 'display:block;width:100%;height:100%;object-fit:' + v.fit + ';pointer-events:none;';
+            const sp = () => { try { e.playbackRate = v.speed; } catch (x) { } };
+            sp(); e.addEventListener('loadedmetadata', sp);
+            e.addEventListener('canplay', () => { const p = e.play(); if (p && p.catch) p.catch(() => { }); });
+            e.onerror = () => { e.style.display = 'none'; };
+            return e;
+        }
+        function _thxVideos(c, host, abs, reduce, phase) {
+            if (reduce) return;
+            (c.videos || []).forEach(v => {
+                if ((v.mode === 'bg') !== (phase === 'bg')) return;
+                const yt = _thxYt(v.url), el = _thxVidEl(v);
+                if (v.mode === 'bg') {
+                    const sz = _thxSize(host, abs), W = sz[0], H = sz[1];
+                    const box = _thxBox(abs, abs ? 0 : -1); box.className = 'thx-vid' + (v.hideMobile ? ' deco-hm' : ''); box.style.opacity = v.opacity / 100;
+                    if (yt) el.style.cssText += 'position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:' + (abs ? Math.max(W, H * 16 / 9) + 'px' : 'max(100vw,177.78vh)') + ';height:' + (abs ? Math.max(H, W * 9 / 16) + 'px' : 'max(100vh,56.25vw)') + ';';
+                    else el.style.cssText += 'position:absolute;inset:0;';
+                    box.appendChild(el);
+                    if (v.dim > 0) { const d = document.createElement('div'); d.style.cssText = 'position:absolute;inset:0;background:' + _rgba(c.bg, v.dim / 100) + ';'; box.appendChild(d); }
+                    host.appendChild(box);
+                    return;
+                }
+                const o = document.createElement('div');
+                o.className = 'deco-item deco-' + v.layer + (v.hideMobile ? ' deco-hm' : '');
+                o.style.transform = _thxPlace(o, v.pos, v.off, v.size);
+                const wrap = document.createElement('div'), circle = v.shape === 'circle';
+                wrap.style.cssText = 'position:relative;overflow:hidden;aspect-ratio:' + (circle ? '1 / 1' : v.ratio.replace(':', ' / ')) + ';border-radius:' + (circle ? '50%' : v.radius + 'px') + ';opacity:' + (v.opacity / 100) + ';background:#000;' +
+                    (v.shadow ? 'box-shadow:0 10px 26px rgba(0,0,0,.4);' : '') + (v.border ? 'border:3px solid ' + c.accent + ';box-sizing:border-box;' : '');
+                el.style.cssText += 'position:absolute;inset:0;width:100%;height:100%;';
+                wrap.appendChild(el); o.appendChild(wrap); host.appendChild(o);
+            });
+        }
+        /* วางสติกเกอร์ + วิดีโอ + ของตกลงมา + บรรยากาศ + กรอบ ลงใน host */
+        function renderDecor(c, host) {
+            if (!host) return;
+            host.innerHTML = '';
+            if (!c) return;
+            const abs = _thxAbs(host), reduce = _thxReduce();
+            _thxVideos(c, host, abs, reduce, 'bg');
+            _thxAmbient(c, host, abs, reduce);
+            (c.stickers || []).forEach(s => {
+                const o = document.createElement('div');
+                o.className = 'deco-item deco-' + s.layer + (s.hideMobile ? ' deco-hm' : '');
+                o.style.transform = (s.pos === 'free' ? _thxFree(o, s) : _thxPlace(o, s.pos, s.off, s.size)) + (s.rotate ? ' rotate(' + s.rotate + 'deg)' : '') + (s.flip ? ' scaleX(-1)' : '');
+                const inner = document.createElement('div');
+                inner.className = 'deco-inner anim-' + s.anim;
+                inner.style.opacity = s.opacity / 100;
+                const fl = [];
+                if (s.shadow) fl.push('drop-shadow(0 6px 8px rgba(0,0,0,.35))');
+                if (s.glowC) fl.push('drop-shadow(0 0 ' + s.glowSize + 'px ' + s.glowC + ')');
+                if (s.hue) fl.push('hue-rotate(' + s.hue + 'deg)');
+                if (s.gray) fl.push('grayscale(' + s.gray + '%)');
+                if (s.bright !== 100) fl.push('brightness(' + s.bright + '%)');
+                if (s.blur) fl.push('blur(' + s.blur + 'px)');
+                if (fl.length) inner.style.filter = fl.join(' ');
+                if (s.speed !== 1 && THX_ANIM_BASE[s.anim]) inner.style.animationDuration = (THX_ANIM_BASE[s.anim] / s.speed).toFixed(2) + 's';
+                if (s.delay > 0) inner.style.animationDelay = s.delay + 's';
+                if (s.url) {
+                    const img = document.createElement('img');
+                    img.src = s.url; img.alt = '';
+                    if (s.round > 0) img.style.borderRadius = s.round + '%';
+                    img.onerror = function () { inner.style.display = 'none'; };
+                    inner.appendChild(img);
+                } else {
+                    const e = document.createElement('div');
+                    e.className = 'deco-emoji'; e.textContent = s.emoji; e.style.fontSize = s.size + 'px';
+                    inner.appendChild(e);
+                }
+                if (s.text) {
+                    const b = document.createElement('div'); b.className = 'deco-bubble'; b.textContent = s.text;
+                    if (s.bubbleBg) b.style.background = s.bubbleBg;
+                    if (s.bubbleText) b.style.color = s.bubbleText;
+                    inner.appendChild(b);
+                }
+                o.appendChild(inner);
+                host.appendChild(o);
+            });
+            _thxVideos(c, host, abs, reduce, 'box');
+            _thxFall(c, host, abs, reduce);
+            _thxFrame(c, host, abs);
+        }
+
+        /* ---------- ฉลองความสำเร็จ + เอฟเฟกต์เมาส์ ---------- */
+        function _thxLayer(root) {
+            const abs = !!(root && root.hasAttribute && root.hasAttribute('data-thx-abs'));
+            const L = _thxBox(abs, abs ? 30 : 9999);
+            (abs ? root : document.body).appendChild(L);
+            return { L: L, abs: abs, W: abs ? root.offsetWidth : window.innerWidth, H: abs ? root.offsetHeight : window.innerHeight };
+        }
+        function _thxPt(root, e) {
+            if (root && root.hasAttribute && root.hasAttribute('data-thx-abs')) { const r = root.getBoundingClientRect(), k = (r.width / root.offsetWidth) || 1; return [(e.clientX - r.left) / k, (e.clientY - r.top) / k]; }
+            return [e.clientX, e.clientY];
+        }
+        function _thxFly(L, ch, x, y, o) {
+            const p = document.createElement('div');
+            p.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;line-height:1;will-change:transform,opacity;';
+            if (o.color) { p.style.background = o.color; p.style.width = o.w + 'px'; p.style.height = o.h + 'px'; p.style.borderRadius = o.round ? '50%' : '2px'; }
+            else { p.textContent = ch; p.style.fontSize = o.size + 'px'; }
+            L.appendChild(p);
+            if (!p.animate) { setTimeout(() => p.remove(), 800); return; }
+            const T = (k, s) => 'translate(-50%,-50%) translate(' + Math.round(o.dx * k) + 'px,' + Math.round(o.dy * k + (s || 0)) + 'px) rotate(' + Math.round(o.rot * k) + 'deg) scale(' + (0.6 + 0.4 * Math.min(1, k * 2)) + ')';
+            const a = p.animate([{ transform: T(0), opacity: 1 }, { transform: T(0.55), opacity: 1, offset: 0.45 }, { transform: T(1, o.grav), opacity: 0 }], { duration: o.dur, easing: 'cubic-bezier(.2,.7,.4,1)', fill: 'forwards' });
+            a.onfinish = () => p.remove();
+        }
+        function themeCelebrate(c, root, which) {
+            if (!c) return;
+            const T = _thxLayer(root), L = T.L, W = T.W, H = T.H, reduce = _thxReduce();
+            const hs = _hsl(c.accent)[0];
+            const pal = [c.accent, c.strong, _mix(c.accent, '#ffffff', 0.5), _fromHsl(hs + 40, 80, 60), _fromHsl(hs - 40, 80, 60), _fromHsl(hs + 160, 75, 62)];
+            const em = Array.from(c.celebEmoji || ''), R = (a, b) => a + Math.random() * (b - a);
+            const piece = (x, y, ang, sp, grav, big) => {
+                const useEm = em.length && (c.celebrate !== 'confetti' || Math.random() < 0.35);
+                const o = { dx: Math.cos(ang) * sp, dy: Math.sin(ang) * sp, grav: grav, rot: R(-360, 360), dur: R(1200, 2200) };
+                if (useEm) { o.size = Math.round(R(big ? 22 : 16, big ? 38 : 28)); _thxFly(L, em[Math.floor(Math.random() * em.length)], x, y, o); }
+                else { o.color = pal[Math.floor(Math.random() * pal.length)]; o.round = c.celebrate === 'fireworks'; o.w = Math.round(o.round ? R(5, 8) : R(6, 11)); o.h = Math.round(o.round ? o.w : R(8, 15)); _thxFly(L, '', x, y, o); }
+            };
+            const n = c.celebCount, M = Math.min(W, H);
+            if (!reduce && c.celebrate) {
+                if (c.celebrate === 'confetti') { for (let i = 0; i < n; i++) { const left = i % 2 === 0; piece(left ? W * 0.06 : W * 0.94, H * 0.96, -Math.PI / 2 + (left ? 1 : -1) * R(0.05, 0.85), R(0.35, 0.95) * H * 0.85, H * 0.55, false); } }
+                else if (c.celebrate === 'burst') { for (let i = 0; i < n; i++) piece(W / 2, H * 0.45, R(0, 6.283), R(0.12, 0.5) * M * 1.1, R(30, 110), true); }
+                else if (c.celebrate === 'rain') { for (let i = 0; i < n; i++) setTimeout(() => piece(R(0, W), -20, Math.PI / 2 + R(-0.15, 0.15), H * R(0.95, 1.2), 0, true), i * 35); }
+                else if (c.celebrate === 'fireworks') { [[0.25, 0.35, 0], [0.75, 0.3, 380], [0.5, 0.5, 760]].forEach(f => setTimeout(() => { for (let i = 0; i < Math.max(8, Math.round(n / 3)); i++) piece(W * f[0], H * f[1], R(0, 6.283), R(0.1, 0.3) * M * 1.1, R(20, 70), false); }, f[2])); }
+            }
+            const msg = which === 'create' ? c.celebText2 : c.celebText;
+            if (msg) {
+                const t = document.createElement('div'); t.textContent = msg;
+                t.style.cssText = 'position:absolute;top:22px;left:50%;transform:translateX(-50%);background:' + c.accent + ';color:' + (_lum(c.accent) > 0.55 ? '#0f172a' : '#ffffff') + ';padding:10px 24px;border-radius:999px;font-weight:700;font-size:' + (T.abs ? 20 : 16) + 'px;box-shadow:0 10px 28px rgba(0,0,0,.35);white-space:nowrap;font-family:inherit;';
+                L.appendChild(t);
+                if (t.animate && !reduce) t.animate([{ transform: 'translate(-50%,-60px)', opacity: 0 }, { transform: 'translate(-50%,0)', opacity: 1, offset: 0.15 }, { transform: 'translate(-50%,0)', opacity: 1, offset: 0.85 }, { transform: 'translate(-50%,-20px)', opacity: 0 }], { duration: 2900, fill: 'forwards' });
+                else setTimeout(() => t.remove(), 2900);
+            }
+            setTimeout(() => L.remove(), 5200);
+        }
+        /* ผูกเอฟเฟกต์คลิก / รอยเมาส์ (root = null → ทั้งหน้า) */
+        function themeBindFx(c, root) {
+            const tg = root || document;
+            if (tg.__thx) { tg.removeEventListener('pointerdown', tg.__thx.d); tg.removeEventListener('pointermove', tg.__thx.m); if (tg.__thx.L) tg.__thx.L.remove(); tg.__thx = null; }
+            if (!c || (!c.clickFx && !c.trail) || _thxReduce()) return;
+            const st = { L: null }, R = (a, b) => a + Math.random() * (b - a), tr = Array.from(c.trail || '');
+            const lay = () => { if (!st.L || !st.L.isConnected) st.L = _thxLayer(root).L; return st.L; };
+            let last = 0;
+            st.d = function (e) {
+                if (!c.clickFx) return;
+                const L = lay(), p = _thxPt(root, e), x = p[0], y = p[1];
+                if (c.clickFx === 'ripple') {
+                    const d = document.createElement('div'); d.style.cssText = 'position:absolute;left:' + x + 'px;top:' + y + 'px;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:3px solid ' + c.accent + ';';
+                    L.appendChild(d); if (d.animate) d.animate([{ transform: 'scale(.5)', opacity: 0.9 }, { transform: 'scale(4.5)', opacity: 0 }], { duration: 650, easing: 'ease-out' }).onfinish = () => d.remove(); else d.remove();
+                } else {
+                    const k = c.clickFx;
+                    for (let i = 0; i < (k === 'hearts' ? 5 : (k === 'confetti' ? 10 : 7)); i++) {
+                        const a = k === 'hearts' ? -Math.PI / 2 + R(-0.8, 0.8) : R(0, 6.283), sp = k === 'hearts' ? R(50, 100) : R(36, 80);
+                        const o = { dx: Math.cos(a) * sp, dy: Math.sin(a) * sp, grav: k === 'hearts' ? -20 : 25, rot: R(-120, 120), dur: R(600, 950) };
+                        if (k === 'confetti') { o.color = [c.accent, c.strong, _mix(c.accent, '#ffffff', 0.5)][i % 3]; o.w = 6; o.h = 9; _thxFly(L, '', x, y, o); }
+                        else { o.size = Math.round(R(14, 22)); _thxFly(L, k === 'hearts' ? ['💖', '💗', '💕'][i % 3] : ['✨', '⭐'][i % 2], x, y, o); }
+                    }
+                }
+            };
+            st.m = function (e) {
+                if (!tr.length) return;
+                const now = Date.now(); if (now - last < 45) return; last = now;
+                const p = _thxPt(root, e);
+                _thxFly(lay(), tr[Math.floor(Math.random() * tr.length)], p[0], p[1], { size: Math.round(R(12, 20)), dx: R(-14, 14), dy: R(10, 34), grav: 10, rot: R(-60, 60), dur: R(650, 1000) });
+            };
+            tg.addEventListener('pointerdown', st.d); tg.addEventListener('pointermove', st.m);
+            tg.__thx = { d: st.d, m: st.m, get L() { return st.L; } };
+        }
+        function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+        /* ============================ THEME ENGINE v4 END ============================ */
+        themeDecorConfig('assign', [['confirm-dlg', 'assigndlg']]);
+
+        /* ===== ฉลองความสำเร็จตามธีมที่ใช้อยู่ (เรียกหลังบันทึก/ส่งงานสำเร็จ) =====
+           which = 'create' (สร้างกล่องงาน → celebText2) | 'submit' (ส่งงาน → celebText)
+           ถ้าธีมไม่ได้ตั้งเอฟเฟกต์/ข้อความฉลองไว้ จะแสดงข้อความ fallbackMsg (alert) เหมือนเดิม */
+        function thxCelebrate(which, fallbackMsg) {
+            let c = null;
+            try {
+                const st = SHOP_THEMES.find(t => t.id === document.documentElement.getAttribute('data-theme'));
+                c = st ? st.config : null;
+            } catch (e) {}
+            const txt = c ? (which === 'create' ? c.celebText2 : c.celebText) : '';
+            if (c && (c.celebrate || txt)) {
+                try { themeCelebrate(c, null, which); } catch (e) {}
+                if (fallbackMsg && !txt) setTimeout(() => alert(fallbackMsg), 2300);
+                return true;
+            }
+            if (fallbackMsg) alert(fallbackMsg);
+            return false;
+        }
+
+        function setShopThemes(list) {
+            SHOP_THEMES = (Array.isArray(list) ? list : []).filter(t => t && /^shop-[\w-]+$/.test(t.id) && t.name)
+                .map(t => ({ id: t.id, name: String(t.name), price: String(t.price || 'ฟรี'), config: cleanCfg(t.config) }));
+            let st = document.getElementById('shop-theme-style');
+            if (!st) { st = document.createElement('style'); st.id = 'shop-theme-style'; document.head.appendChild(st); }
+            st.textContent = SHOP_THEMES.map(t => themeCss('html[data-theme="' + t.id + '"]', t.config, THEME_SEL)).join('\n');
+        }
+        function getThemeStorageKey() {
+            try {
+                const t = JSON.parse(sessionStorage.getItem('loggedInTeacher') || localStorage.getItem('savedTeacherProfile') || 'null');
+                if (t && (t.username || t.email)) return 'theme_' + (t.username || t.email);
+            } catch (e) {}
+            return null;
+        }
+        function getSavedTheme() {
+            const k = getThemeStorageKey();
+            let id = null;
+            try { id = k ? localStorage.getItem(k) : null; } catch (e) {}
+            return (THEMES.some(t => t.id === id) || /^shop-[\w-]+$/.test(id || '')) ? id : 'default';
+        }
+        function applyTheme(id, save) {
+            if (!/^shop-[\w-]+$/.test(id || '') && !THEMES.some(t => t.id === id)) id = 'default';
+            document.documentElement.setAttribute('data-theme', id);
+            if (save) {
+                const k = getThemeStorageKey();
+                if (k) { try { localStorage.setItem(k, id); } catch (e) {} }
+                if (typeof saveThemeToCloud === 'function') saveThemeToCloud(id);   // ล็อกธีมลงชีต
+            }
+            document.querySelectorAll('.theme-item').forEach(el => el.classList.toggle('selected', el.dataset.theme === id));
+            const st = SHOP_THEMES.find(t => t.id === id);
+            themeDecorApply(st ? st.config : null, true);
+            applyThemeFont(st ? st.config : null);
+            themeBindFx(st ? st.config : null, null);
+        }
+        function themeCard(t, shop) {
+            const tags = shop
+                ? '<div class="theme-tagrow"><span class="theme-price' + (t.price === 'ฟรี' ? ' free' : '') + '">' + esc(t.price) + '</span>' + (t.badge ? '<span class="theme-badge">' + esc(t.badge) + '</span>' : '') + '</div>' + (t.tagline ? '<div class="theme-tagline">' + esc(t.tagline) + '</div>' : '')
+                : '';
+            const thumb = t.thumb ? 'background-image:url(&quot;' + esc(t.thumb) + '&quot;);background-size:cover;background-position:center;' : '';
+            return '<button type="button" class="theme-item" data-theme="' + t.id + '" onclick="applyTheme(\'' + t.id + '\', true)">'
+                + '<span class="theme-check">✓</span>'
+                + '<div class="theme-swatch" style="background-color:' + t.bg + ';' + thumb + '"><div class="sw-nav" style="background:' + t.nav + '"></div><div class="sw-dot" style="background:' + t.accent + '"></div></div>'
+                + esc(t.name) + tags + '</button>';
+        }
+        function renderThemePicker() {
+            const grid = document.getElementById('theme-grid');
+            if (!grid) { applyTheme(document.documentElement.getAttribute('data-theme') || 'default', false); return; }
+            grid.innerHTML = THEMES.map(t => themeCard(t, false)).join('');
+            const sg = document.getElementById('shop-grid'), st = document.getElementById('shop-title');
+            if (sg && st) {
+                sg.innerHTML = SHOP_THEMES.map(t => themeCard({ id: t.id, name: t.name, nav: t.config.nav1, bg: t.config.bg, accent: t.config.accent, price: t.price, badge: t.config.badge, tagline: t.config.tagline, thumb: t.config.bgImage || t.config.mainImage || t.config.navImage || t.config.cardImage }, true)).join('');
+                st.classList.toggle('hidden', SHOP_THEMES.length === 0);
+                sg.classList.toggle('hidden', SHOP_THEMES.length === 0);
+            }
+            applyTheme(document.documentElement.getAttribute('data-theme') || 'default', false);
+        }
+        function toggleThemePanel(force) {
+            const d = document.getElementById('theme-drawer'), b = document.getElementById('btn-theme-menu');
+            if (!d) return;
+            const open = (typeof force === 'boolean') ? force : !d.classList.contains('open');
+            d.classList.toggle('open', open);
+            if (b) b.classList.toggle('open', open);
+        }
+        async function loadShopThemes() {
+            try {
+                const res = await fetch(THEME_API + '?action=get_themes&t=' + Date.now());
+                const r = await res.json();
+                if (r.status !== 'success' || !Array.isArray(r.themes)) return;
+                const list = r.themes.map(t => ({ id: 'shop-' + t.id, name: t.name, price: t.price, config: t.config }));
+                try { localStorage.setItem(SHOP_CACHE_KEY, JSON.stringify(list)); } catch (e) {}
+                setShopThemes(list);
+                renderThemePicker();
+                // ธีมที่ครูเคยเลือกถูกลบ/ซ่อนโดย admin -> กลับเป็นธีมเริ่มต้น
+                const cur = document.documentElement.getAttribute('data-theme') || '';
+                if (/^shop-/.test(cur) && !SHOP_THEMES.some(t => t.id === cur)) applyTheme('default', true);
+            } catch (e) { /* ออฟไลน์: ใช้ธีมจากแคชต่อไป */ }
+        }
+        // ใช้ธีมทันทีก่อนหน้าเว็บวาด เพื่อไม่ให้เห็นสีเดิมแวบหนึ่ง
+        try { setShopThemes(JSON.parse(localStorage.getItem(SHOP_CACHE_KEY) || '[]')); } catch (e) {}
+        applyTheme(getSavedTheme(), false);
+        document.addEventListener('DOMContentLoaded', () => { renderThemePicker(); loadShopThemes(); });
+    </script>
+</head>
+<body>
+    <div id="theme-deco"></div>
+
+    <div id="auth-alert" class="overlay hidden">
+        <div class="dlg">
+            <h3>ปฏิเสธการเข้าถึง!</h3>
+            <p>หน้าเว็บนี้เฉพาะคุณครูเท่านั้น กรุณาเข้าสู่ระบบก่อนใช้งาน</p>
+            <div class="row"><button class="btn btn-orange" onclick="location.href='index.html'">ไปหน้าหลัก</button></div>
+        </div>
+    </div>
+
+    <div id="confirm-dlg" class="overlay hidden" style="z-index:300;">
+        <div class="dlg">
+            <h3 id="cf-title"></h3>
+            <p id="cf-msg"></p>
+            <div class="row">
+                <button class="btn btn-gray" id="cf-cancel">ยกเลิก</button>
+                <button class="btn btn-orange" id="cf-ok">ยืนยัน</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="page" class="hidden">
+        <nav class="navbar">
+            <h1>
+                <a class="btn-back" href="index.html">🏠 กลับหน้าหลัก</a>
+                <a class="btn-back" href="teacher-home.html">⬅️ กลับหน้าสั่งงาน</a>
+                🗂️ ประวัติการสั่งงาน &amp; สำรองข้อมูล
+            </h1>
+            <div class="who"><b id="who-name">-</b> | <span id="who-mail">-</span></div>
+        </nav>
+
+        <div class="wrap">
+            <!-- ชีตสำรอง -->
+            <div class="card">
+                <h2>💾 ชีตสำรองข้อมูล</h2>
+                <div id="backup-box"><div class="loading"><div class="spin"></div><div id="load-msg">กำลังตรวจสอบ/สร้างชีตสำรองให้อัตโนมัติ...</div></div></div>
+            </div>
+
+            <!-- สถิติ + รายการ -->
+            <div id="data-area" class="hidden">
+                <div class="stats">
+                    <div class="stat"><div class="n" id="s-all">0</div><div class="l">งานที่เคยสั่งทั้งหมด</div></div>
+                    <div class="stat g"><div class="n" id="s-ok">0</div><div class="l">กำลังรับงาน</div></div>
+                    <div class="stat o"><div class="n" id="s-closed">0</div><div class="l">ปิดรับงานแล้ว</div></div>
+                    <div class="stat r"><div class="n" id="s-del">0</div><div class="l">ลบแล้ว (ยังเก็บประวัติ)</div></div>
+                </div>
+
+                <div class="card">
+                    <h2>📋 ประวัติการสั่งงาน</h2>
+                    <div class="filters">
+                        <input id="q" type="text" placeholder="🔍 ค้นหา ชื่องาน / วิชา / ห้อง..." oninput="renderTasks()">
+                        <select id="f-status" onchange="renderTasks()">
+                            <option value="">ทุกสถานะ</option>
+                            <option value="ใช้งาน">กำลังรับงาน</option>
+                            <option value="ปิดรับงาน">ปิดรับงานแล้ว</option>
+                            <option value="ลบแล้ว">ลบแล้ว</option>
+                        </select>
+                    </div>
+                    <div id="task-list"></div>
+                </div>
+
+                <div class="card">
+                    <h2>🕘 ความเคลื่อนไหวล่าสุด</h2>
+                    <div id="timeline" class="timeline"></div>
+                </div>
+            </div>
+
+            <!-- ถังขยะ / ชีตที่กู้คืน -->
+            <div id="trash-card" class="card hidden">
+                <h2>🗑️ ชีตเก่า (ถังขยะ / กู้คืน)</h2>
+                <p class="muted" style="margin-bottom:10px;">ชีตที่ถูกรีเซ็ตจะอยู่ในถังขยะ — กู้คืนเพื่อเปิดดูข้อมูลเก่า หรือลบถาวรเมื่อไม่ต้องการแล้ว</p>
+                <div id="trash-list"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- แผงสไลด์ขวา: ตรวจดูงานที่นักเรียนส่ง -->
+    <div id="rv-backdrop" class="rv-backdrop" onclick="closeReview()"></div>
+    <aside id="rv-panel" class="rv-panel" aria-hidden="true">
+        <div class="rv-head">
+            <div>
+                <h3 id="rv-title">ตรวจดูงาน</h3>
+                <div class="rv-sub" id="rv-sub">-</div>
+            </div>
+            <button class="rv-x" onclick="closeReview()" aria-label="ปิด">✕</button>
+        </div>
+        <div class="rv-tools">
+            <input id="rv-q" type="text" placeholder="🔍 ค้นหา ชื่อ / เลขที่..." oninput="renderReview()">
+            <select id="rv-cls" onchange="rvClsChange()"><option value="">ทุกห้อง</option></select>
+            <select id="rv-dept" onchange="renderReview()" style="display:none;"><option value="">ทุกแผนก</option></select>
+            <button class="btn btn-gray btn-sm" onclick="reloadReview()">↻ รีเฟรช</button>
+        </div>
+        <div class="rv-sum" id="rv-sum"></div>
+        <div class="rv-body" id="rv-body"></div>
+    </aside>
+
+    <div id="toast"></div>
+
+    <script>
+        // ---------- ตัวช่วย ----------
+        function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+        function safeUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+        function toast(msg, isErr) {
+            const el = document.getElementById('toast');
+            el.style.background = isErr ? '#dc2626' : '#16a34a';
+            el.textContent = msg; el.style.opacity = '1';
+            clearTimeout(el.__t); el.__t = setTimeout(() => { el.style.opacity = '0'; }, isErr ? 6000 : 2200);
+        }
+        async function postJSON(payload, timeoutMs) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), timeoutMs || 90000);
+            try {
+                const res = await fetch(BACKEND_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload), signal: ctrl.signal });
+                const text = await res.text();
+                let j; try { j = JSON.parse(text); } catch (e) { throw new Error('เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (ตรวจสอบการ Deploy Apps Script)'); }
+                if (!j || j.status !== 'success') throw new Error((j && j.message) || 'ดำเนินการไม่สำเร็จ');
+                return j;
+            } catch (err) {
+                if (err.name === 'AbortError') throw new Error('การเชื่อมต่อหมดเวลา กรุณาลองใหม่');
+                throw err;
+            } finally { clearTimeout(timer); }
+        }
+        function askConfirm(title, msg, okLabel, danger) {
+            return new Promise(resolve => {
+                const dlg = document.getElementById('confirm-dlg');
+                document.getElementById('cf-title').textContent = title;
+                document.getElementById('cf-msg').textContent = msg;
+                const ok = document.getElementById('cf-ok'), no = document.getElementById('cf-cancel');
+                ok.textContent = okLabel || 'ยืนยัน';
+                ok.className = 'btn ' + (danger ? 'btn-red' : 'btn-orange');
+                dlg.classList.remove('hidden');
+                const done = v => { dlg.classList.add('hidden'); ok.onclick = no.onclick = null; resolve(v); };
+                ok.onclick = () => done(true); no.onclick = () => done(false);
+            });
+        }
+        function fmtDeadline(s) {
+            const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+            return m ? `${m[3]}/${m[2]}/${m[1]} ${m[4]} น.` : '-';
+        }
+
+        // ---------- ข้อมูลครู ----------
+        function getTeacherData() {
+            const raw = sessionStorage.getItem('loggedInTeacher') || localStorage.getItem('savedTeacherProfile');
+            if (!raw) return null;
+            try { const t = JSON.parse(raw); return (t && (t.username || t.email)) ? t : null; } catch (e) { return null; }
+        }
+        const T = getTeacherData();
+        let KEY = '', MAIL = '', NAME = '';
+        if (T) {
+            KEY = String(T.username || T.email).trim().toLowerCase();      // ต้องตรงกับ teacherUser ที่ใช้ตอนสั่งงาน
+            const u = String(T.username || '').trim();
+            MAIL = T.email ? String(T.email).trim() : (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u) ? u : '');
+            NAME = T.fullName || T.username || '';
+        }
+
+        // ---------- สถานะหน้า ----------
+        let DATA = null;            // ผลล่าสุดจาก get_tch_backup
+        let viewId = '';            // ชีตที่กำลังดู
+        let busy = false;
+
+        async function load(opts) {
+            opts = opts || {};
+            const ensure = opts.ensure ? '1' : '0';
+            const url = `${BACKEND_URL}?action=get_tch_backup&identifier=${encodeURIComponent(KEY)}&name=${encodeURIComponent(NAME)}&email=${encodeURIComponent(MAIL)}&ensure=${ensure}&withData=1&sheetId=${encodeURIComponent(opts.sheetId || '')}&t=${Date.now()}`;
+            const res = await fetch(url);
+            const j = await res.json();
+            if (!j || j.status !== 'success') throw new Error((j && j.message) || 'โหลดข้อมูลไม่สำเร็จ');
+            DATA = j;
+            viewId = j.viewId || '';
+            render();
+        }
+
+        async function firstLoad() {
+            try { await load({ ensure: true }); }
+            catch (e) {
+                document.getElementById('backup-box').innerHTML = `<p class="muted" style="color:#f87171;">⚠️ ${esc(e.message)}</p><div class="row" style="margin-top:10px;"><button class="btn btn-orange" onclick="location.reload()">ลองใหม่</button></div>`;
+            }
+        }
+
+        // ---------- วาดหน้า ----------
+        function render() {
+            renderBackupBox();
+            renderTrash();
+            const hasData = !!DATA.viewId;
+            document.getElementById('data-area').classList.toggle('hidden', !hasData);
+            if (hasData) { renderStats(); renderTasks(); renderTimeline(); }
+        }
+
+        function renderBackupBox() {
+            const d = DATA;
+            const cur = d.sheets.filter(s => s.status === 'active').slice(-1)[0];
+            const restored = d.sheets.filter(s => s.status === 'restored');
+            let h = '';
+            if (cur) {
+                h += `<div class="status-line"><span class="dot"></span>ชีตสำรองที่ใช้งานอยู่ (ชีตที่ ${cur.no}) — ระบบสำรองให้อัตโนมัติ</div>`;
+                h += `<p class="muted">สร้างเมื่อ ${esc(cur.createdAt || '-')}<br>ทุกครั้งที่สั่งงาน แก้ไข ปิดรับ หรือลบงาน ระบบจะบันทึกลงชีตนี้ทันที ไม่ต้องเข้าหน้านี้เพื่อกดสำรอง</p>`;
+                h += `<div class="row" style="margin-top:14px;">
+                        <a class="btn btn-green" href="${esc(safeUrl(cur.url))}" target="_blank" rel="noopener">📊 เปิด Google Sheet</a>
+                        <button class="btn btn-orange" onclick="resetSheet()">🔄 รีเซ็ต / สร้างชีตใหม่</button>
+                        <button class="btn btn-gray" onclick="reloadView()">↻ โหลดข้อมูลใหม่</button>
+                      </div>`;
+            } else {
+                h += `<p class="muted">ยังไม่มีชีตสำรองที่ใช้งานอยู่</p><div class="row" style="margin-top:10px;"><button class="btn btn-green" onclick="resetSheet(true)">➕ สร้างชีตสำรอง</button></div>`;
+            }
+            if (restored.length || cur) {
+                h += `<div class="chips">`;
+                if (cur) h += `<button class="chip ${viewId === cur.id ? 'on' : ''}" onclick="switchView('${esc(cur.id)}')">ชีตที่ ${cur.no} (ปัจจุบัน)</button>`;
+                restored.forEach(r => { h += `<button class="chip ${viewId === r.id ? 'on' : ''}" onclick="switchView('${esc(r.id)}')">ชีตที่ ${r.no} (กู้คืนแล้ว)</button>`; });
+                h += `</div>`;
+            }
+            if (DATA.viewStatus === 'restored') h += `<div class="banner">📂 กำลังดูชีตเก่าที่กู้คืนมา (อ่านอย่างเดียว) — ข้อมูลใหม่จะไม่ถูกบันทึกลงชีตนี้</div>`;
+            document.getElementById('backup-box').innerHTML = h;
+        }
+
+        function renderStats() {
+            const t = DATA.tasks;
+            document.getElementById('s-all').textContent = t.length;
+            document.getElementById('s-ok').textContent = t.filter(x => x.status === 'ใช้งาน').length;
+            document.getElementById('s-closed').textContent = t.filter(x => x.status === 'ปิดรับงาน').length;
+            document.getElementById('s-del').textContent = t.filter(x => x.status === 'ลบแล้ว').length;
+        }
+
+        function badgeOf(st) { return st === 'ลบแล้ว' ? '<span class="badge b-del">🗑️ ลบแล้ว</span>' : (st === 'ปิดรับงาน' ? '<span class="badge b-closed">🔒 ปิดรับงาน</span>' : '<span class="badge b-ok">✅ กำลังรับงาน</span>'); }
+
+        function renderTasks() {
+            if (!DATA) return;
+            const q = document.getElementById('q').value.trim().toLowerCase();
+            const fs = document.getElementById('f-status').value;
+            const list = DATA.tasks.filter(t => {
+                if (fs && t.status !== fs) return false;
+                if (!q) return true;
+                return [t.title, t.subject, t.targetClasses, t.sharedClasses, t.department, t.desc].join(' ').toLowerCase().indexOf(q) !== -1;
+            });
+            const box = document.getElementById('task-list');
+            if (!list.length) { box.innerHTML = '<div class="empty">ยังไม่มีประวัติการสั่งงานที่ตรงเงื่อนไข</div>'; return; }
+            box.innerHTML = list.map(t => {
+                const dl = String(t.downloadLinks || '').split(',').map(s => s.trim()).filter(safeUrl);
+                const row = (k, v) => `<div class="k">${k}</div><div class="v">${v}</div>`;
+                let body = '';
+                body += row('วิชา', esc(t.subject || '-'));
+                body += row('ห้องที่สั่ง', esc(t.targetClasses || '-'));
+                body += row('แชร์ให้นักเรียน', esc(t.sharedClasses || '-'));
+                body += row('แผนก', esc(t.department || '-'));
+                body += row('สั่งงานครั้งแรก', esc(t.firstAt || '-'));
+                body += row('แก้ไขล่าสุด', esc(t.updatedAt || '-'));
+                body += row('กำหนดส่ง', esc(fmtDeadline(t.deadline)));
+                if (t.closed) body += row('ปิดรับงานเมื่อ', esc(t.closedAt || '-'));
+                if (t.deletedAt) body += row('ลบเมื่อ', esc(t.deletedAt));
+                body += row('รายละเอียด', esc(t.desc || '-'));
+                body += row('ชีตรับงาน', safeUrl(t.link) ? `<a href="${esc(safeUrl(t.link))}" target="_blank" rel="noopener">เปิดชีตรับงาน</a>` : '-');
+                body += row('ไฟล์แนบ', dl.length ? dl.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">ไฟล์ที่ ${i + 1}</a>`).join(' · ') : '-');
+                const imgs = (t.images || []).filter(safeUrl);
+                body += row('รูปภาพ', imgs.length ? imgs.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">รูปที่ ${i + 1}</a>`).join(' · ') : '-');
+                return `<details class="task ${t.status === 'ลบแล้ว' ? 'deleted' : ''}">
+                    <summary>
+                        <div><div class="t-title">${esc(t.title || '(ไม่มีชื่องาน)')}</div>
+                        <div class="t-sub">${esc(t.subject || '-')} · ห้อง ${esc(t.targetClasses || '-')} · สั่งเมื่อ ${esc(t.firstAt || '-')}</div></div>
+                        <div class="t-side">${badgeOf(t.status)}${safeUrl(t.link) ? `<button type="button" class="btn btn-green btn-sm" onclick="openReview(event,'${esc(String(t.id).replace(/'/g, ''))}')">🔍 ตรวจดูงาน</button>` : ''}</div>
+                    </summary>
+                    <div class="t-body">${body}</div>
+                </details>`;
+            }).join('');
+        }
+
+        function renderTimeline() {
+            const box = document.getElementById('timeline');
+            if (!DATA.log || !DATA.log.length) { box.innerHTML = '<div class="empty">ยังไม่มีความเคลื่อนไหว</div>'; return; }
+            box.innerHTML = DATA.log.map(l => `<div class="ev"><div class="tm">${esc(l.time)}</div><div><span class="nm">${esc(l.event)}</span> · <span class="tt">${esc(l.title || '-')}</span>${l.detail ? `<div class="muted">${esc(l.detail)}</div>` : ''}</div></div>`).join('');
+        }
+
+        function renderTrash() {
+            const items = DATA.sheets.filter(s => s.status === 'trash' || s.status === 'restored');
+            document.getElementById('trash-card').classList.toggle('hidden', !items.length);
+            document.getElementById('trash-list').innerHTML = items.map(s => {
+                const link = `<a class="btn btn-gray" href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener">📊 เปิดชีต</a>`;
+                if (s.status === 'trash') {
+                    return `<div class="sheet-row"><div>🗑️ ชีตที่ ${s.no} <span class="muted">· เข้าถังขยะเมื่อ ${esc(s.trashedAt || '-')}</span></div>
+                        <div class="row">${link}<button class="btn btn-green" onclick="manage('restore','${esc(s.id)}')">♻️ กู้คืนเพื่อดูข้อมูล</button><button class="btn btn-red" onclick="manage('delete','${esc(s.id)}')">🗑️ ลบถาวร</button></div></div>`;
+                }
+                return `<div class="sheet-row"><div>📂 ชีตที่ ${s.no} <span class="muted">· กู้คืนแล้ว (ดูได้ด้านบน)</span></div>
+                    <div class="row">${link}<button class="btn btn-gray" onclick="switchView('${esc(s.id)}')">👁️ ดูข้อมูล</button><button class="btn btn-orange" onclick="manage('trash','${esc(s.id)}')">ย้ายกลับถังขยะ</button></div></div>`;
+            }).join('');
+        }
+
+        // ---------- การกระทำ ----------
+        async function switchView(id) {
+            if (busy) return;
+            busy = true;
+            try { await load({ sheetId: id }); } catch (e) { toast(e.message, true); } finally { busy = false; }
+        }
+        async function reloadView() {
+            if (busy) return;
+            busy = true;
+            try { await load({ sheetId: viewId }); toast('โหลดข้อมูลล่าสุดแล้ว', false); } catch (e) { toast(e.message, true); } finally { busy = false; }
+        }
+        async function resetSheet(noConfirm) {
+            if (busy) return;
+            if (!noConfirm) {
+                const ok = await askConfirm('🔄 รีเซ็ตและสร้างชีตใหม่?', 'ระบบจะสร้าง Google Sheet ใหม่ให้ 1 ไฟล์ ส่วนชีตเดิมจะถูกย้ายไปที่ "ถังขยะ" ซึ่งยังกู้คืนมาดูข้อมูลได้ หรือเลือกลบถาวรภายหลัง', 'รีเซ็ตเลย', false);
+                if (!ok) return;
+            }
+            busy = true;
+            document.getElementById('backup-box').innerHTML = '<div class="loading"><div class="spin"></div><div>กำลังสร้างชีตใหม่...</div></div>';
+            try {
+                await postJSON({ action: 'tch_backup_manage', op: 'new', userKey: KEY, name: NAME, email: MAIL });
+                await load({});
+                toast('สร้างชีตใหม่เรียบร้อย ชีตเดิมอยู่ในถังขยะ', false);
+            } catch (e) { toast(e.message, true); try { await load({}); } catch (x) {} } finally { busy = false; }
+        }
+        async function manage(op, id) {
+            if (busy) return;
+            if (op === 'delete') {
+                const ok = await askConfirm('🗑️ ลบชีตถาวร?', 'ไฟล์ Google Sheet นี้จะถูกลบและกู้คืนไม่ได้อีก', 'ลบถาวร', true);
+                if (!ok) return;
+            }
+            busy = true;
+            try {
+                await postJSON({ action: 'tch_backup_manage', op: op, sheetId: id, userKey: KEY });
+                await load({ sheetId: (op === 'trash' || op === 'delete') && viewId === id ? '' : viewId });
+                toast(op === 'restore' ? 'กู้คืนแล้ว สามารถเปิดดูข้อมูลได้' : (op === 'trash' ? 'ย้ายกลับถังขยะแล้ว' : 'ลบถาวรเรียบร้อย'), false);
+            } catch (e) { toast(e.message, true); } finally { busy = false; }
+        }
+
+
+        // ---------- ตรวจดูงาน: แผงสไลด์ขวา (อ่านจากชีตรับงานของงานนั้น) ----------
+        let rvRows = [], rvTask = null, rvToken = 0, rvGroup = [], rvFail = 0, rvScope = 'this';
+
+        function driveId(u) {
+            const m = String(u || '').match(/\/d\/([\w-]+)/) || String(u || '').match(/[?&]id=([\w-]+)/);
+            return m ? m[1] : '';
+        }
+        function isImgName(n) { return /\.(png|jpe?g|webp|gif)$/i.test(String(n || '')); }
+        function fmtClass(c) { return String(c || '').trim() || '-'; }
+
+        // ---------- ตัวเลือกห้อง (Grade ในชีต Admin) + แผนก (ชีต vocation ตามชื่อโรงเรียนของครู) ----------
+        let OPT = { levels: [], depts: [] }, optPromise = null;
+
+        function normText(s) {
+            return String(s == null ? '' : s).replace(/[๐-๙]/g, d => '๐๑๒๓๔๕๖๗๘๙'.indexOf(d)).replace(/[.\s]/g, '').toLowerCase();
+        }
+        function normDeptTxt(s) {
+            return String(s == null ? '' : s).replace(/\s/g, '').replace(/^(แผนกวิชา|แผนก|สาขาวิชา|สาขางาน|สาขา)/, '').toLowerCase();
+        }
+        function deptMatch(a, b) {
+            const x = normDeptTxt(a), y = normDeptTxt(b);
+            if (!x || !y) return false;
+            if (x === y) return true;
+            return Math.min(x.length, y.length) >= 4 && (x.indexOf(y) !== -1 || y.indexOf(x) !== -1);
+        }
+        // ห้องของนักเรียน (เช่น ปวช.1/2) ตรงกับตัวเลือกจาก GradeVet (เช่น ปวช.1 หรือ ปวช.1/2) หรือไม่
+        function classMatchesLevel(cls, lv) {
+            const c = normText(cls), l = normText(lv);
+            if (!c || !l) return false;
+            if (c === l) return true;
+            if (c.indexOf(l) !== 0) return false;
+            return !/\d/.test(c.charAt(l.length));      // กัน ปวช.1 ไปตรงกับ ปวช.10
+        }
+        async function teacherInstitution() {
+            let inst = T ? String(T.institution || T.school || T.schoolName || '').trim() : '';
+            if (inst) return inst;
+            try {
+                const res = await fetch(`${BACKEND_URL}?action=get_user_profile&role=teacher&identifier=${encodeURIComponent(KEY)}&t=${Date.now()}`);
+                const j = await res.json();
+                if (j && j.status === 'success' && j.user) inst = String(j.user.institution || '').trim();
+            } catch (e) {}
+            return inst;
+        }
+        function ensureOptions() {
+            if (optPromise) return optPromise;
+            optPromise = (async () => {
+                const out = { levels: [], depts: [] };
+                try {
+                    const res = await fetch(`${BACKEND_URL}?action=get_grades&t=${Date.now()}`);
+                    const j = await res.json();
+                    if (j && j.status === 'success') out.levels = Array.from(new Set((j.grades || []).map(g => String(g.grade).trim()).filter(Boolean)));
+                } catch (e) {}
+                try {
+                    const inst = await teacherInstitution();
+                    if (inst) {
+                        const res = await fetch(`${BACKEND_URL}?action=get_vocations&t=${Date.now()}`);
+                        const j = await res.json();
+                        const voc = (j && j.status === 'success' && j.vocations) || {};
+                        const ni = normText(inst);
+                        const key = Object.keys(voc).find(k => normText(k) === ni)
+                            || Object.keys(voc).find(k => { const nk = normText(k); return nk && (nk.indexOf(ni) !== -1 || ni.indexOf(nk) !== -1); });
+                        if (key) out.depts = Array.from(new Set((voc[key] || []).map(s => String(s).trim()).filter(Boolean)));
+                    }
+                } catch (e) {}
+                OPT = out;
+                return out;
+            })();
+            // ถ้าโหลดไม่ได้เลย ให้ลองใหม่ในครั้งถัดไป
+            optPromise.then(o => { if (!o.levels.length && !o.depts.length) optPromise = null; });
+            return optPromise;
+        }
+        function fillFilters(rows) {
+            const cls = document.getElementById('rv-cls'), dep = document.getElementById('rv-dept');
+            const prev = cls.value;
+            let rooms = OPT.levels;
+            if (!rooms.length) {
+                rooms = Array.from(new Set((rows || []).map(r => fmtClass(r.studentClass)))).sort((a, b) => a.localeCompare(b, 'th', { numeric: true }));
+            }
+            cls.innerHTML = '<option value="__this">📌 เฉพาะงานนี้</option><option value="">🌐 ทุกห้อง (ทุกงานที่สั่ง)</option>' + rooms.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+            cls.value = Array.from(cls.options).some(o => o.value === prev) ? prev : '__this';
+            dep.innerHTML = '<option value="">ทุกแผนก</option>' + OPT.depts.map(d => `<option value="${esc(d)}">${esc(d)}</option>`).join('');
+            dep.style.display = OPT.depts.length ? '' : 'none';
+        }
+        // เลือก "ทุกห้อง" = โหลดงานที่ส่งจากทุกชีตรับงานของครู / "เฉพาะงานนี้" = ชีตเดียว / เลือกห้อง = กรองในขอบเขตปัจจุบัน
+        function rvClsChange() {
+            const v = document.getElementById('rv-cls').value;
+            const want = v === '' ? 'all' : (v === '__this' ? 'this' : rvScope);
+            if (want !== rvScope) { rvScope = want; rvGroup = rvGroupOf(rvTask); loadReview(); }
+            else renderReview();
+        }
+
+        // ขอบเขตข้อมูล: this = ชีตรับงานของงานนี้ / all = ทุกชีตรับงานของครู (ทุกวิชา ทุกห้อง ทุกแผนก อ่านจากประวัติในชีตสำรอง)
+        function rvGroupOf(t) {
+            const list = rvScope === 'all' ? [t].concat((DATA.tasks || []).filter(x => String(x.id) !== String(t.id) && safeUrl(x.link))) : [t];
+            const byLink = {}, out = [];
+            list.forEach(x => {
+                const k = driveId(x.link) || x.link;
+                if (!byLink[k]) { byLink[k] = { task: x, ids: [] }; out.push(byLink[k]); }
+                byLink[k].ids.push(String(x.id));
+            });
+            out.forEach(o => {
+                const x = o.task;
+                o.label = (x.title || '(ไม่มีชื่องาน)') + ' · ' + (x.subject || '-') + ' · ' + (String(x.targetClasses || '').trim() || '-');
+            });
+            return out;
+        }
+        // แปลงเวลา th-TH เช่น 18/11/2569 14:05:33 เป็น ms (คืน 0 ถ้าอ่านไม่ได้)
+        function thaiTs(s) {
+            const m = String(s || '').replace(/[๐-๙]/g, d => '๐๑๒๓๔๕๖๗๘๙'.indexOf(d))
+                .match(/(\d{1,2})\/(\d{1,2})\/(\d{4}),?\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+            if (!m) return 0;
+            let y = +m[3]; if (y > 2400) y -= 543;
+            return new Date(y, +m[2] - 1, +m[1], +m[4], +m[5], +(m[6] || 0)).getTime();
+        }
+
+        function openReview(ev, id) {
+            if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+            const t = (DATA.tasks || []).find(x => String(x.id) === String(id));
+            if (!t) return;
+            rvTask = t;
+            rvScope = 'this';
+            rvGroup = rvGroupOf(t);
+            document.getElementById('rv-title').textContent = '📝 ' + (t.title || '(ไม่มีชื่องาน)');
+            document.getElementById('rv-sub').textContent = (t.subject || '-') + ' · ห้อง ' + (t.targetClasses || '-');
+            document.getElementById('rv-q').value = '';
+            document.getElementById('rv-cls').innerHTML = '';
+            fillFilters([]);
+            document.getElementById('rv-cls').value = '__this';
+            document.getElementById('rv-backdrop').classList.add('show');
+            document.getElementById('rv-panel').classList.add('open');
+            document.getElementById('rv-panel').setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+            loadReview();
+        }
+        function closeReview() {
+            rvToken++;
+            document.getElementById('rv-backdrop').classList.remove('show');
+            document.getElementById('rv-panel').classList.remove('open');
+            document.getElementById('rv-panel').setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+        }
+        function reloadReview() { if (rvTask) loadReview(); }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReview(); });
+
+        async function loadReview() {
+            const my = ++rvToken;
+            document.getElementById('rv-sum').innerHTML = '';
+            document.getElementById('rv-body').innerHTML = '<div class="loading"><div class="spin"></div><div>กำลังโหลดข้อมูลจากชีตรับงาน' + (rvGroup.length > 1 ? ' ' + rvGroup.length + ' ชีต' : '') + '...</div></div>';
+            try {
+                const fetchOne = async src => {
+                    const url = `${BACKEND_URL}?action=get_task_submissions&identifier=${encodeURIComponent(KEY)}&taskId=${encodeURIComponent(src.task.id)}&sheetId=${encodeURIComponent(viewId || '')}&t=${Date.now()}`;
+                    const res = await fetch(url);
+                    const j = await res.json();
+                    if (!j || j.status !== 'success') throw new Error((j && j.message) || 'โหลดข้อมูลไม่สำเร็จ');
+                    return (j.submissions || []).map(r => Object.assign({}, r, { _src: src.label, _tid: String(src.task.id) }));
+                };
+                // โหลดทีละ 4 ชีต กัน Apps Script ทำงานหนักเกินไป
+                const results = new Array(rvGroup.length);
+                let next = 0;
+                const worker = async () => {
+                    while (next < rvGroup.length) {
+                        const i = next++;
+                        try { results[i] = { ok: true, v: await fetchOne(rvGroup[i]) }; }
+                        catch (e) { results[i] = { ok: false, e: e }; }
+                    }
+                };
+                await Promise.all([Promise.all([worker(), worker(), worker(), worker()]), ensureOptions()]);
+                if (my !== rvToken) return;
+                const ok = results.filter(r => r && r.ok);
+                if (!ok.length) throw (results[0] && results[0].e) || new Error('โหลดข้อมูลไม่สำเร็จ');
+                rvFail = results.length - ok.length;
+                let rows = [].concat.apply([], ok.map(r => r.v));
+                const withTs = rows.map((r, i) => ({ r: r, i: i, e: thaiTs(r.timestamp) }));
+                if (withTs.every(x => x.e)) withTs.sort((a, b) => a.e - b.e || a.i - b.i);
+                rows = withTs.map(x => x.r);
+                rvRows = rows;
+                fillFilters(rvRows);
+                renderReview();
+            } catch (e) {
+                if (my !== rvToken) return;
+                document.getElementById('rv-body').innerHTML = `<div class="empty" style="color:#f87171;">⚠️ ${esc(e.message)}</div>`;
+            }
+        }
+
+        function workHtml(r) {
+            const w = safeUrl(r.workData);
+            if (!w) return `<span class="muted">${esc(r.workData || '-')}</span>`;
+            const id = driveId(w);
+            if (id && isImgName(r.fileName)) {
+                return `<a href="${esc(w)}" target="_blank" rel="noopener"><img class="rv-thumb" loading="lazy" src="https://drive.google.com/thumbnail?id=${esc(id)}&sz=w400" alt="${esc(r.fileName)}"></a>
+                        <a class="rv-file" href="${esc(w)}" target="_blank" rel="noopener">🖼️ เปิดรูปเต็ม</a>`;
+            }
+            const icon = id ? '📄' : '🔗';
+            const label = id ? (r.fileName || 'เปิดไฟล์งาน') : (r.fileName && r.fileName !== 'ไฟล์จาก Google Drive' ? r.fileName : w);
+            return `<a class="rv-file" href="${esc(w)}" target="_blank" rel="noopener">${icon} ${esc(label)}</a>`;
+        }
+
+        function renderReview() {
+            const q = document.getElementById('rv-q').value.trim().toLowerCase();
+            const cls = document.getElementById('rv-cls').value;
+            const dept = document.getElementById('rv-dept').value;
+
+            // จัดกลุ่มตามนักเรียน (ส่งซ้ำ = เอาครั้งล่าสุดเป็นหลัก)
+            const groups = {};
+            rvRows.forEach((r, i) => {
+                const k = ((String(r.studentCode || '').trim() || (r.studentName + '|' + r.studentClass + '|' + r.studentNo)) + '|' + (r._tid || '')).toLowerCase();
+                (groups[k] = groups[k] || []).push(Object.assign({ _i: i }, r));
+            });
+            let list = Object.keys(groups).map(k => { const a = groups[k].sort((x, y) => y._i - x._i); return { latest: a[0], older: a.slice(1) }; });
+
+            const total = list.length;
+            list = list.filter(g => {
+                const r = g.latest;
+                if (cls && cls !== '__this' && !classMatchesLevel(r.studentClass, cls)) return false;
+                if (dept && !deptMatch(r.studentDept, dept)) return false;
+                if (!q) return true;
+                return [r.studentName, r.studentNo].join(' ').toLowerCase().indexOf(q) !== -1;
+            });
+            list.sort((a, b) => fmtClass(a.latest.studentClass).localeCompare(fmtClass(b.latest.studentClass), 'th', { numeric: true })
+                || String(a.latest.studentNo).localeCompare(String(b.latest.studentNo), 'th', { numeric: true }));
+
+            document.getElementById('rv-sum').innerHTML = `✅ ส่งงานแล้ว <b>${total}</b> คน <span class="muted">(${rvRows.length} ครั้ง)</span>` + (list.length !== total ? ` <span class="muted">· แสดง ${list.length} คน</span>` : '')
+                + (rvScope === 'all' ? ` <span class="muted">· รวมจาก ${rvGroup.length} ชีตรับงาน</span>` : '')
+                + (rvFail ? ` <span style="color:#f87171;">· ⚠️ เปิดไม่ได้ ${rvFail} ชีต</span>` : '');
+            const box = document.getElementById('rv-body');
+            if (!list.length) { box.innerHTML = `<div class="empty">${total ? 'ไม่พบรายชื่อที่ตรงเงื่อนไข' : 'ยังไม่มีนักเรียนส่งงานชิ้นนี้'}</div>`; return; }
+
+            box.innerHTML = list.map(g => {
+                const r = g.latest;
+                const older = g.older.length ? `<details class="rv-old"><summary>ดูงานที่ส่งก่อนหน้า (${g.older.length})</summary>${g.older.map(o => {
+                    const w = safeUrl(o.workData);
+                    return `<div class="rv-oi"><span>${esc(o.timestamp)}</span>${w ? `<a href="${esc(w)}" target="_blank" rel="noopener">${esc(o.fileName || 'เปิดงาน')}</a>` : ''}</div>`;
+                }).join('')}</details>` : '';
+                return `<div class="rv-card">
+                    <div class="rv-who">
+                        <div class="rv-no">${esc(r.studentNo || '-')}</div>
+                        <div>
+                            <div class="rv-nm">${esc(r.studentName || '(ไม่ระบุชื่อ)')}</div>
+                            <div class="rv-meta">ชั้น ${esc(fmtClass(r.studentClass))}${r.studentDept ? ' · ' + esc(r.studentDept) : ''} · เลขที่ ${esc(r.studentNo || '-')} · รหัส ${esc(r.studentCode || '-')}</div>\n                            ${rvScope === 'all' && r._src ? `<div class="rv-meta">📌 งาน: ${esc(r._src)}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="rv-work">${workHtml(r)}</div>
+                    <div class="rv-time">🕒 ส่งเมื่อ ${esc(r.timestamp || '-')}${g.older.length ? `<span class="rv-again">ส่ง ${g.older.length + 1} ครั้ง</span>` : ''}</div>
+                    ${older}
+                </div>`;
+            }).join('');
+        }
+
+        // ---------- ซิงก์ธีมกับหน้าครู (อ่านจากชีต Tchdata ตามบัญชี) ----------
+        async function loadThemeFromCloud() {
+            const key = T ? String(T.email || T.username || '').trim() : '';
+            if (!key) return;
+            try {
+                const res = await fetch(`${BACKEND_URL}?action=get_theme_pref&role=teacher&identifier=${encodeURIComponent(key)}&t=${Date.now()}`);
+                const r = await res.json();
+                if (!r || r.status !== 'success' || !r.theme) return;
+                const k = getThemeStorageKey();
+                if (k) { try { localStorage.setItem(k, r.theme); } catch (e) {} }
+                if (document.documentElement.getAttribute('data-theme') !== r.theme) applyTheme(r.theme, false);
+            } catch (e) {}
+        }
+
+        // ---------- เริ่มทำงาน ----------
+        if (!T) {
+            document.getElementById('auth-alert').classList.remove('hidden');
+        } else {
+            document.getElementById('who-name').textContent = NAME || '-';
+            document.getElementById('who-mail').textContent = MAIL || T.username || '-';
+            document.getElementById('page').classList.remove('hidden');
+            loadThemeFromCloud();
+            firstLoad();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="th" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เเพลตฟอร์มสำหรับส่งงานและสั่งงานออนไลน์วิทยาลัยอาชีวศึกษาชุมพร | Future Science & Technology School</title>
+    <!-- Favicon Icon -->
+    <link rel="icon" type="image/png" href="photo/icon1.png">
+    <!-- Tailwind CSS CDN -->
+    <script>
+/* [ความปลอดภัย] แนบ authTokens ไปกับทุกคำขอที่ส่งไป Apps Script โดยอัตโนมัติ (ไม่กระทบการทำงานเดิม) */
+(function () {
+  if (window.__authFetchPatched) return; window.__authFetchPatched = true;
+  var _fetch = window.fetch;
+  function tokens() {
+    var out = [], srcs = [[sessionStorage, 'loggedInTeacher'], [sessionStorage, 'loggedInUser'], [localStorage, 'savedTeacherProfile'], [localStorage, 'savedUserProfile']];
+    for (var i = 0; i < srcs.length; i++) {
+      try {
+        var raw = srcs[i][0].getItem(srcs[i][1]);
+        if (!raw) continue;
+        var o = JSON.parse(raw), t = o && (o.authToken || o.adminToken);
+        if (t && out.indexOf(String(t)) === -1) out.push(String(t));
+      } catch (e) {}
+    }
+    return out;
+  }
+  window.fetch = function (input, init) {
+    try {
+      var url = typeof input === 'string' ? input : ((input && input.url) || '');
+      if (url.indexOf('script.google.com/macros/') !== -1) {
+        var tk = tokens();
+        if (tk.length) {
+          var method = String((init && init.method) || 'GET').toUpperCase();
+          if (method === 'POST' && init && typeof init.body === 'string' && init.body.charAt(0) === '{' && init.body.indexOf('"authTokens"') === -1) {
+            var rest = init.body.slice(1);
+            init = Object.assign({}, init, { body: '{"authTokens":' + JSON.stringify(tk) + (rest.replace(/^\s+/, '').charAt(0) === '}' ? '' : ',') + rest });
+          } else if (method === 'GET' && typeof input === 'string' && url.indexOf('authTokens=') === -1) {
+            input = input + (input.indexOf('?') === -1 ? '?' : '&') + 'authTokens=' + encodeURIComponent(tk.join(','));
+          }
+        }
+      }
+    } catch (e) {}
+    return _fetch.call(this, input, init);
+  };
+})();
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Prompt -->
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js Library for 3D Rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Prompt', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            800: '#0F172A',
+                            900: '#0B132B',
+                            950: '#050B1A',
+                        },
+                        gold: {
+                            400: '#FACC15',
+                            500: '#EAB308',
+                            600: '#CA8A04',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #F8FAFC;
+            background-image: radial-gradient(rgba(11,19,43,0.05) 1px, transparent 1px);
+            background-size: 22px 22px;
+        }
+        /* ป้องกันการกระพริบและอาการหน่วงขณะเช็คสถานะล็อกอิน */
+        .auth-checking { opacity: 0; }
+        .auth-ready { opacity: 1; transition: opacity 0.15s ease-in; }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .gradient-banner {
+            background:
+                radial-gradient(60rem 30rem at 50% -10%, rgba(58,80,107,0.55), transparent 60%),
+                linear-gradient(180deg, #050B1A 0%, #0B132B 45%, #1C2541 100%);
+        }
+        .grid-lines {
+            background-image:
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            -webkit-mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+            mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+        }
+        /* ---------- Buttons ---------- */
+        .btn-gold {
+            background: linear-gradient(135deg, #FACC15, #EAB308);
+            color: #0B132B;
+            box-shadow: 0 10px 26px -10px rgba(234,179,8,0.75);
+            transition: transform .25s ease, filter .25s ease, box-shadow .25s ease;
+        }
+        .btn-gold:hover { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 14px 30px -10px rgba(234,179,8,0.9); }
+        .btn-ghost {
+            background: rgba(255,255,255,0.08);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.28);
+            backdrop-filter: blur(6px);
+            transition: background .25s ease, transform .25s ease, border-color .25s ease;
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.18); border-color: rgba(250,204,21,0.6); transform: translateY(-2px); }
+        .btn-navy {
+            background: linear-gradient(135deg, #0B132B, #3A506B);
+            color: #fff;
+            box-shadow: 0 10px 24px -12px rgba(11,19,43,0.8);
+            transition: transform .25s ease, filter .25s ease;
+        }
+        .btn-navy:hover { transform: translateY(-2px); filter: brightness(1.15); }
+        .chip-user {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(250,204,21,0.45);
+            color: #fff;
+            transition: background .25s ease;
+        }
+        .chip-user:hover { background: rgba(255,255,255,0.16); }
+        /* ---------- Cards ---------- */
+        .menu-item { position: relative; transition: background .2s ease, padding-left .2s ease; }
+        .menu-item:hover { padding-left: 1.1rem; }
+        .stat-card { transition: transform .3s ease, box-shadow .3s ease; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 22px 40px -18px rgba(11,19,43,0.35); }
+        .prog-card { transition: transform .3s ease, border-color .3s ease, background .3s ease; }
+        .prog-card:hover { transform: translateY(-6px); background: rgba(255,255,255,0.09); }
+        .section-kicker { display: inline-flex; align-items: center; gap: .6rem; }
+        .section-kicker::before { content: ""; width: 2rem; height: 2px; background: currentColor; border-radius: 2px; }
+        /* ---------- แจ้งเตือนประกาศใหม่ (จุดแดง + Popup) ---------- */
+        .news-dot {
+            display: none; position: absolute; top: -4px; right: -4px;
+            width: 13px; height: 13px; border-radius: 9999px;
+            background: #ef4444; border: 2px solid #0B132B; z-index: 5;
+            animation: newsPulse 1.6s ease-out infinite;
+        }
+        .news-dot.on { display: block; }
+        @keyframes newsPulse {
+            0%   { box-shadow: 0 0 0 0 rgba(239,68,68,.75); }
+            70%  { box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
+        .news-count {
+            display: none; margin-left: auto; align-items: center; gap: .3rem;
+            padding: 2px 9px; border-radius: 9999px;
+            background: #ef4444; color: #fff; font-size: 11px; font-weight: 700; line-height: 1.4;
+        }
+        .news-count.on { display: inline-flex; }
+        .news-popup-card { animation: newsPop .35s cubic-bezier(.2,.9,.3,1.2) both; }
+        @keyframes newsPop {
+            from { opacity: 0; transform: translateY(18px) scale(.94); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .news-bell { animation: newsBell 1.8s ease-in-out infinite; transform-origin: 50% 0; }
+        @keyframes newsBell {
+            0%, 60%, 100% { transform: rotate(0); }
+            10% { transform: rotate(16deg); } 20% { transform: rotate(-14deg); }
+            30% { transform: rotate(10deg); } 40% { transform: rotate(-6deg); } 50% { transform: rotate(3deg); }
+        }
+    </style>
+<style>
+#annPopOverlay{position:fixed;inset:0;z-index:9990;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(5,11,26,.78);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+#annPopOverlay.show{display:flex}
+#annPopBox{position:relative;width:min(92vw,560px);max-height:92vh;background:#fff;border-radius:20px;box-shadow:0 25px 60px rgba(0,0,0,.45);display:flex;flex-direction:column;overflow:hidden}
+#annPopStage{position:relative;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#0f172a;touch-action:pan-y}
+#annPopImg{display:block;max-width:100%;max-height:70vh;width:auto;height:auto;object-fit:contain}
+#annPopClose{position:absolute;top:10px;right:10px;z-index:3;width:38px;height:38px;border-radius:999px;border:0;background:rgba(15,23,42,.75);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+#annPopClose:hover{background:#e11d48}
+.annPopNav{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:42px;height:42px;border-radius:999px;border:0;background:rgba(15,23,42,.65);color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.annPopNav:hover{background:rgba(15,23,42,.9)}
+#annPopPrev{left:10px}#annPopNext{right:10px}
+#annPopCount{position:absolute;left:12px;top:14px;z-index:3;background:rgba(15,23,42,.7);color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+#annPopFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-top:1px solid #e2e8f0}
+#annPopFoot label{display:flex;align-items:center;gap:8px;font-size:13px;color:#334155;cursor:pointer;user-select:none}
+#annPopFoot input[type=checkbox]{width:18px;height:18px;accent-color:#f59e0b;cursor:pointer}
+#annPopDots{display:flex;gap:6px;align-items:center;max-width:50%;overflow:hidden}
+#annPopDots i{width:8px;height:8px;border-radius:999px;background:#cbd5e1;display:block;flex:none}
+#annPopDots i.on{background:#f59e0b;width:18px}
+</style>
+</head>
+<body id="pageBody" class="text-slate-800 antialiased min-h-screen flex flex-col justify-between auth-checking">
+
+    <!-- Sidebar Backdrop / Overlay -->
+    <div id="sidebarOverlay" onclick="closeSidebar(); closeNewsDrawer();" class="fixed inset-0 bg-navy-950/70 backdrop-blur-sm z-50 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+
+    <!-- Side Slide-out Panel (Drawer) - Profile & Main Menu -->
+    <aside id="sidebar" class="fixed top-0 left-0 h-full w-80 max-w-[85vw] bg-white z-50 shadow-2xl rounded-r-3xl transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between overflow-y-auto">
+        <div>
+            <!-- Sidebar Header / Profile Brief -->
+            <div class="p-6 pb-8 bg-gradient-to-br from-navy-950 via-navy-900 to-[#3A506B] text-white relative rounded-br-[2.5rem] border-b-4 border-amber-400">
+                <button onclick="closeSidebar()" class="absolute top-4 right-4 text-slate-300 hover:text-amber-300 p-2 rounded-full hover:bg-white/10 transition-colors">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+                
+                <!-- Profile Container -->
+                <div id="sidebarProfile" class="flex items-center gap-4 mt-2">
+                    <!-- Dynamic Profile Content -->
+                </div>
+            </div>
+
+            <!-- Sidebar Navigation Links / Functions -->
+            <nav class="p-4 space-y-1.5">
+                <div class="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    เมนูการใช้งาน
+                </div>
+                <a href="#about" onclick="closeSidebar()" class="menu-item flex items-center gap-3 px-3 py-2.5 rounded-2xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">
+                    <span class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-house text-blue-900"></i></span>
+                    <span>หน้าหลัก</span>
+                </a>
+
+                <!-- ปุ่มประกาศ & ข่าวสาร ใน Sidebar -->
+                <button onclick="openNewsDrawer(); closeSidebar();" class="menu-item w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-2xl text-slate-700 hover:bg-amber-50 hover:text-amber-900 font-medium">
+                    <span class="relative w-9 h-9 rounded-xl bg-amber-50 flex items-center justify-center"><i class="fa-solid fa-bullhorn text-amber-500"></i><span class="news-dot" data-news-dot style="border-color:#fff;"></span></span>
+                    <span>ประกาศ & ข่าวสาร</span>
+                    <span class="news-count" data-news-count>ใหม่</span>
+                </button>
+
+                <!-- เมนูเฉพาะผู้เข้าสู่ระบบแล้ว -->
+                <div id="userMenuItems" class="space-y-1.5">
+                    <a id="workMenuLink" href="student-home.html" class="menu-item flex items-center gap-3 px-3 py-2.5 rounded-2xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">
+                        <span class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center"><i id="workMenuIcon" class="fa-solid fa-file-arrow-up w-5 text-center text-blue-900"></i></span>
+                        <span id="workMenuText">ส่งงาน / การบ้าน</span>
+                    </a>
+                    <a href="javascript:void(0)" onclick="openGuideModal()" class="menu-item flex items-center gap-3 px-3 py-2.5 rounded-2xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">
+                        <span class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-book-open-reader text-blue-900"></i></span>
+                        <span>คู่มือการใช้งาน</span>
+                    </a>
+                    <a id="historyMenuLink" href="submission-history.html" class="menu-item flex items-center gap-3 px-3 py-2.5 rounded-2xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">
+                        <span class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-clock-rotate-left text-blue-900"></i></span>
+                        <span>ประวัติการส่งงาน</span>
+                    </a>
+                    <a id="teacherHistoryMenuLink" href="assign-history.html" style="display:none" class="menu-item flex items-center gap-3 px-3 py-2.5 rounded-2xl text-slate-700 hover:bg-blue-50 hover:text-blue-900 font-medium">
+                        <span class="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-folder-open text-blue-900"></i></span>
+                        <span>ประวัติการสั่งงาน / สำรองข้อมูล</span>
+                    </a>
+
+                    <div class="pt-4 border-t border-slate-100 my-2"></div>
+
+                    <div class="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        การตั้งค่าเเละช่วยเหลือ
+                    </div>
+                    <a href="profile-settings.html" class="menu-item flex items-center gap-3 px-3 py-2.5 rounded-2xl text-slate-700 hover:bg-slate-100 font-medium">
+                        <span class="w-9 h-9 rounded-xl bg-slate-100 flex items-center justify-center"><i class="fa-solid fa-user-gear text-slate-500"></i></span>
+                        <span>ตั้งค่าโปรไฟล์</span>
+                    </a>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer / Auth Action Button -->
+        <div id="sidebarFooter" class="p-4 border-t border-slate-100 bg-slate-50">
+            <!-- Dynamic Footer Button -->
+        </div>
+    </aside>
+
+    <!-- Navigation Bar (Floating Dark Pill) -->
+    <header class="sticky top-0 z-40 px-3 sm:px-6 pt-3">
+        <div class="max-w-7xl mx-auto h-16 px-3 sm:px-5 rounded-2xl bg-navy-900/90 backdrop-blur-xl border border-white/10 shadow-2xl shadow-navy-950/40 flex items-center justify-between">
+            
+            <!-- School Brand / Logo + Sidebar Hamburger Button -->
+            <div class="flex items-center gap-3">
+                <button onclick="openSidebar()" class="relative p-2 w-10 h-10 rounded-xl text-white bg-white/10 hover:bg-white/20 border border-white/15 transition-colors mr-1" title="เปิดเมนูโปรไฟล์">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                    <span class="news-dot" data-news-dot></span>
+                </button>
+
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-300 to-amber-500 flex items-center justify-center text-navy-900 shadow-lg shadow-amber-500/30">
+                    <i class="fa-solid font-bold fa-graduation-cap text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg leading-tight text-white">แพลตฟอร์มส่งงานออนไลน์</h1>
+                    <p class="text-[10px] sm:text-xs text-amber-300/80 tracking-wider">Platform for Online Submission & Tasks</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links & Action Buttons -->
+            <div class="hidden md:flex items-center gap-8">
+                <nav class="flex items-center gap-6 text-sm font-medium text-slate-300">
+                    <a id="navAboutLink" href="#about" class="hover:text-amber-300 transition-colors">เกี่ยวกับโรงเรียน</a>
+                    <button onclick="openNewsDrawer()" class="relative hover:text-white text-amber-300 font-semibold flex items-center gap-1.5 transition-colors">
+                        <i class="fa-solid fa-bullhorn text-amber-400 animate-pulse"></i>
+                        <span class="news-dot" data-news-dot style="top:-5px; left:11px; right:auto;"></span>
+                        <span>ประกาศ & ข่าวสาร</span>
+                    </button>
+                    <a href="#programs" class="hover:text-amber-300 transition-colors">หลักสูตร</a>
+                    <a href="#highlights" class="hover:text-amber-300 transition-colors">จุดเด่น & ผลงาน</a>
+                    <a href="#contact" class="hover:text-amber-300 transition-colors">ติดต่อเรา</a>
+                </nav>
+
+                <!-- Action Buttons Dynamic Area -->
+                <div id="navAuthButtons" class="flex items-center gap-3">
+                    <!-- Dynamic Navigation Buttons -->
+                </div>
+            </div>
+
+            <!-- Mobile Action Menu Button -->
+            <div class="flex md:hidden items-center gap-2">
+                <div id="mobileHeaderBtn">
+                    <!-- Dynamic Mobile Header Button -->
+                </div>
+                <button onclick="toggleMobileMenu()" class="relative p-2 w-10 h-10 rounded-xl text-white hover:bg-white/10">
+                    <i class="fa-solid fa-ellipsis-vertical text-xl"></i>
+                    <span class="news-dot" data-news-dot></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobileMenu" class="hidden md:hidden max-w-7xl mx-auto mt-2 bg-white rounded-2xl shadow-2xl border border-slate-100 px-5 py-4 space-y-3">
+            <a id="mobileAboutLink" href="#about" class="block text-slate-700 hover:text-blue-900 py-1 font-medium">เกี่ยวกับโรงเรียน</a>
+            <button onclick="openNewsDrawer(); toggleMobileMenu();" class="w-full text-left text-blue-900 font-bold py-1 flex items-center gap-2">
+                <i class="fa-solid fa-bullhorn text-amber-500"></i>
+                <span>ประกาศ & ข่าวสาร</span>
+                <span class="news-count" data-news-count>ใหม่</span>
+            </button>
+            <a href="#programs" class="block text-slate-700 hover:text-blue-900 py-1 font-medium">หลักสูตร</a>
+            <a href="#highlights" class="block text-slate-700 hover:text-blue-900 py-1 font-medium">จุดเด่น & ผลงาน</a>
+            <a href="#contact" class="block text-slate-700 hover:text-blue-900 py-1 font-medium">ติดต่อเรา</a>
+            <div id="mobileMenuAuth" class="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                <!-- Dynamic Mobile Menu Auth -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero / School Banner Section (Centered) -->
+    <section class="relative gradient-banner text-white -mt-[76px] pt-36 pb-44 min-h-[90vh] flex items-center overflow-hidden">
+        <!-- 3D Interactive Futuristic Sci-Fi Element Container (Background) -->
+        <div id="school3DContainer" class="absolute inset-0 w-full h-full opacity-35 pointer-events-none" style="-webkit-mask-image: radial-gradient(ellipse at center, #000 35%, transparent 95%); mask-image: radial-gradient(ellipse at center, #000 35%, transparent 95%);"></div>
+        <div class="absolute inset-0 grid-lines"></div>
+        <div class="absolute top-20 left-1/2 -translate-x-1/2 w-[40rem] h-[40rem] max-w-full rounded-full bg-blue-500/10 blur-3xl"></div>
+        <div class="absolute -bottom-32 -right-24 w-96 h-96 rounded-full bg-amber-500/15 blur-3xl"></div>
+        <div class="absolute -bottom-32 -left-24 w-96 h-96 rounded-full bg-indigo-500/15 blur-3xl"></div>
+
+        <div class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-4xl mx-auto text-center space-y-7">
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-400/10 text-amber-300 border border-amber-400/30 text-sm font-medium">
+                    <i class="fa-solid fa-award"></i> โรงเรียนคุณธรรมและนวัตกรรมยอดเยี่ยมประจำปี 2026
+                </div>
+                
+                <h1 class="text-4xl sm:text-5xl lg:text-7xl font-extrabold leading-[1.15] tracking-tight">
+                    สร้างสรรค์ปัญญา <br class="hidden sm:block"/>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-500">
+                        นำพาเทคโนโลยีสู่อนาคต
+                    </span>
+                </h1>
+                
+                <p class="text-slate-300 text-base sm:text-lg max-w-2xl font-light leading-relaxed mx-auto">
+                    มุ่งมั่นจัดการศึกษาระดับมาตรฐานสากล พัฒนาผู้เรียนให้มีความรู้คู่คุณธรรม มีทักษะในศตวรรษที่ 21 และเป็นผู้นำด้านนวัตกรรมและเทคโนโลยี
+                </p>
+
+                <div id="heroAuthButtons" class="pt-2 flex flex-wrap gap-4 justify-center">
+                    <!-- Dynamic Hero Buttons -->
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Quick Statistics / Shortcut Section -->
+    <section class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 -mt-16 relative z-20">
+        <div id="quickStatsOrShortcuts" class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-center">
+            <div class="stat-card bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-blue-900 p-6">
+                <div id="statStudents" class="text-blue-900 text-3xl sm:text-4xl font-extrabold">...</div>
+                <div class="text-slate-500 text-sm font-medium mt-1">นักเรียนทุกระดับชั้น</div>
+            </div>
+            <div class="stat-card bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-indigo-700 p-6">
+                <div id="statTeachers" class="text-blue-900 text-3xl sm:text-4xl font-extrabold">...</div>
+                <div class="text-slate-500 text-sm font-medium mt-1">คณาจารย์และบุคลากร</div>
+            </div>
+            <div class="stat-card bg-navy-900 rounded-2xl shadow-xl border border-navy-800 border-t-4 border-t-amber-400 p-6">
+                <div class="text-amber-400 text-3xl sm:text-4xl font-extrabold">98%</div>
+                <div class="text-slate-300 text-sm font-medium mt-1">สอบเข้ามหาวิทยาลัยได้</div>
+            </div>
+            <div class="stat-card bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-blue-900 p-6">
+                <div class="text-blue-900 text-3xl sm:text-4xl font-extrabold">45+</div>
+                <div class="text-slate-500 text-sm font-medium mt-1">รางวัลการแข่งขันทวิปภาค</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-28">
+                <div class="section-kicker text-blue-900 text-xs font-semibold tracking-widest">
+                    ABOUT OUR SCHOOL
+                </div>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
+                    วิสัยทัศน์ และ พันธกิจของโรงเรียน
+                </h2>
+                <p class="text-slate-600 leading-relaxed">
+                    โรงเรียนวิทยาศาสตร์อนาคตมุ่งเน้นการจัดการเรียนรู้เชิงรุก (Active Learning) บูรณาการความรู้ด้าน STEAM Education (Science, Technology, Engineering, Arts, and Mathematics) เพื่อเตรียมความพร้อมให้เยาวชนก้าวสู่การเป็นพลเมืองโลกที่มีศักยภาพ
+                </p>
+                <div class="space-y-3 pt-2">
+                    <div class="flex items-start gap-3 bg-white rounded-2xl border border-slate-200 border-l-4 border-l-emerald-500 p-4 shadow-sm">
+                        <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </div>
+                        <p class="text-slate-700 font-medium text-sm">ห้องปฏิบัติการวิทยาศาสตร์และปัญญาประดิษฐ์ (AI Lab) ที่ทันสมัย</p>
+                    </div>
+                    <div class="flex items-start gap-3 bg-white rounded-2xl border border-slate-200 border-l-4 border-l-emerald-500 p-4 shadow-sm">
+                        <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </div>
+                        <p class="text-slate-700 font-medium text-sm">หลักสูตรสองภาษา (EP) และครูผู้สอนเจ้าของภาษา</p>
+                    </div>
+                    <div class="flex items-start gap-3 bg-white rounded-2xl border border-slate-200 border-l-4 border-l-emerald-500 p-4 shadow-sm">
+                        <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                            <i class="fa-solid fa-check text-xs"></i>
+                        </div>
+                        <p class="text-slate-700 font-medium text-sm">โครงการความร่วมมือทางวิชาการกับมหาวิทยาลัยชั้นนำทั้งในและต่างประเทศ</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7 grid grid-cols-6 gap-4">
+                <div class="col-span-6 sm:col-span-4 bg-gradient-to-br from-navy-950 via-navy-900 to-[#3A506B] text-white p-7 rounded-3xl flex flex-col justify-between h-56 shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-amber-400/10"></div>
+                    <i class="fa-solid fa-lightbulb text-4xl text-amber-400 relative"></i>
+                    <div class="relative">
+                        <h4 class="font-bold text-xl">นวัตกรรม</h4>
+                        <p class="text-sm text-slate-300 mt-1">ส่งเสริมความคิดสร้างสรรค์และการสร้างนวัตกรรมใหม่</p>
+                    </div>
+                </div>
+                <div class="col-span-6 sm:col-span-2 bg-white p-6 rounded-3xl flex flex-col justify-between h-56 border border-slate-200 shadow-md">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center"><i class="fa-solid fa-globe text-2xl text-blue-800"></i></div>
+                    <div>
+                        <h4 class="font-bold text-lg text-slate-900">มาตรฐานสากล</h4>
+                        <p class="text-xs text-slate-500 mt-1">ยกระดับคุณภาพการเรียนรู้เทียบเท่าระดับสากล</p>
+                    </div>
+                </div>
+                <div class="col-span-6 sm:col-span-2 bg-white p-6 rounded-3xl flex flex-col justify-between h-56 border border-slate-200 shadow-md">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center"><i class="fa-solid fa-hand-holding-heart text-2xl text-rose-600"></i></div>
+                    <div>
+                        <h4 class="font-bold text-lg text-slate-900">คุณธรรมนำความรู้</h4>
+                        <p class="text-xs text-slate-500 mt-1">ปลูกฝังคุณธรรม จริยธรรม และจิตสาธารณะ</p>
+                    </div>
+                </div>
+                <div class="col-span-6 sm:col-span-4 bg-gradient-to-br from-amber-300 to-amber-500 text-navy-900 p-7 rounded-3xl flex flex-col justify-between h-56 shadow-xl relative overflow-hidden">
+                    <div class="absolute -left-10 -bottom-10 w-44 h-44 rounded-full bg-white/20"></div>
+                    <i class="fa-solid fa-users text-4xl relative"></i>
+                    <div class="relative">
+                        <h4 class="font-bold text-xl">สังคมแห่งการเรียนรู้</h4>
+                        <p class="text-sm text-navy-900/80 mt-1">สร้างสภาพแวดล้อมที่เอื้อต่อการเรียนรู้ตลอดชีวิต</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Academic Programs -->
+    <section id="programs" class="py-24 bg-navy-950 relative overflow-hidden">
+        <div class="absolute inset-0 grid-lines opacity-60"></div>
+        <div class="absolute -top-32 left-1/2 -translate-x-1/2 w-[50rem] h-72 max-w-full bg-blue-500/10 blur-3xl rounded-full"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="text-center max-w-2xl mx-auto mb-14">
+                <span class="section-kicker text-amber-400 font-semibold text-sm tracking-widest uppercase">Academic Programs</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-white mt-3">หลักสูตรการเรียนการสอน</h2>
+                <p class="text-slate-400 mt-3">ออกแบบหลักสูตรที่หลากหลายเพื่อตอบสนองความสนใจและศักยภาพของผู้เรียนแต่ละบุคคล</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="prog-card relative bg-white/5 rounded-3xl overflow-hidden border border-white/10 hover:border-blue-400/60 p-7 space-y-5">
+                    <div class="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-blue-500/20 blur-2xl"></div>
+                    <div class="relative w-14 h-14 rounded-2xl bg-blue-900 text-sky-300 border border-sky-400/30 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-microscope"></i>
+                    </div>
+                    <h3 class="relative text-xl font-bold text-white">แผนการเรียน วิทย์-คณิต-คอมพิวเตอร์</h3>
+                    <p class="relative text-slate-400 text-sm leading-relaxed">
+                        เน้นการทดลอง ความรู้ด้าน AI, Coding, Robotics และวิทยาศาสตร์ขั้นสูง พร้อมศึกษาดูงานสถาบันวิจัย
+                    </p>
+                    <ul class="relative text-xs text-slate-300 space-y-2.5 pt-4 border-t border-white/10">
+                        <li><i class="fa-solid fa-angle-right text-sky-400 mr-1"></i> ความร่วมมือกับแล็บวิจัย</li>
+                        <li><i class="fa-solid fa-angle-right text-sky-400 mr-1"></i> เรียนวิชาเลือกด้าน Data Science</li>
+                    </ul>
+                </div>
+
+                <div class="prog-card relative bg-white/5 rounded-3xl overflow-hidden border border-white/10 hover:border-amber-400/60 p-7 space-y-5">
+                    <div class="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-amber-500/20 blur-2xl"></div>
+                    <div class="relative w-14 h-14 rounded-2xl bg-amber-500 text-navy-900 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-language"></i>
+                    </div>
+                    <h3 class="relative text-xl font-bold text-white">หลักสูตรสองภาษา (English Program)</h3>
+                    <p class="relative text-slate-400 text-sm leading-relaxed">
+                        จัดการเรียนการสอนเป็นภาษาอังกฤษในรายวิชาหลัก โดยครูเจ้าของภาษาที่มีใบอนุญาตระดับสากล
+                    </p>
+                    <ul class="relative text-xs text-slate-300 space-y-2.5 pt-4 border-t border-white/10">
+                        <li><i class="fa-solid fa-angle-right text-amber-400 mr-1"></i> เตรียมความพร้อมสอบ IELTS/TOEFL</li>
+                        <li><i class="fa-solid fa-angle-right text-amber-400 mr-1"></i> โครงการแลกเปลี่ยนต่างประเทศ</li>
+                    </ul>
+                </div>
+
+                <div class="prog-card relative bg-white/5 rounded-3xl overflow-hidden border border-white/10 hover:border-indigo-400/60 p-7 space-y-5">
+                    <div class="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-indigo-500/20 blur-2xl"></div>
+                    <div class="relative w-14 h-14 rounded-2xl bg-indigo-700 text-indigo-100 border border-indigo-400/30 flex items-center justify-center text-2xl">
+                        <i class="fa-solid fa-palette"></i>
+                    </div>
+                    <h3 class="relative text-xl font-bold text-white">แผนการเรียน ศิลป์-คำนวณ & ดิจิทัลอาร์ต</h3>
+                    <p class="relative text-slate-400 text-sm leading-relaxed">
+                        ผสมผสานการออกแบบ Digital Media, UX/UI และทักษะภาษาต่างประเทศเพื่อสร้างนักสรรค์ยุคใหม่
+                    </p>
+                    <ul class="relative text-xs text-slate-300 space-y-2.5 pt-4 border-t border-white/10">
+                        <li><i class="fa-solid fa-angle-right text-indigo-300 mr-1"></i> สตูดิโอออกแบบดิจิทัลครบวงจร</li>
+                        <li><i class="fa-solid fa-angle-right text-indigo-300 mr-1"></i> นิทรรศการแสดงผลงานนักเรียน</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Highlights & Activities -->
+    <section id="highlights" class="py-24 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+            <div>
+                <span class="section-kicker text-blue-900 font-semibold text-sm tracking-widest uppercase">Highlights</span>
+                <h2 class="text-3xl sm:text-4xl font-bold text-slate-900 mt-3">จุดเด่นและกิจกรรมโรงเรียน</h2>
+            </div>
+            <p class="text-slate-500 text-sm max-w-md md:text-right">
+                บรรยากาศการเรียนรู้ที่ตื่นเต้นและสร้างสรรค์ ส่งเสริมศักยภาพทั้งด้านวิชาการ กีฬา และสุนทรียภาพ
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 lg:auto-rows-[15rem] gap-5">
+            <div class="group relative rounded-3xl overflow-hidden shadow-lg h-72 lg:h-auto lg:col-span-2 lg:row-span-2">
+                <img src="https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=600&auto=format&fit=crop" alt="Activity 1" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="this.src='https://placehold.co/600x400/0B132B/FFFFFF?text=Activity+1'">
+                <div class="absolute inset-0 p-5 flex flex-col justify-end">
+                    <div class="rounded-2xl bg-navy-900/80 backdrop-blur-md border border-white/10 p-4 text-white border-l-4 border-l-amber-400">
+                        <span class="text-xs text-amber-400 font-medium">กิจกรรมวิชาการ</span>
+                        <h4 class="font-bold text-lg">การแข่งขันหุ่นยนต์ระดับชาติ</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group relative rounded-3xl overflow-hidden shadow-lg h-64 lg:h-auto">
+                <img src="https://images.unsplash.com/photo-1577896851231-70ef18881754?q=80&w=600&auto=format&fit=crop" alt="Activity 2" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="this.src='https://placehold.co/600x400/0B132B/FFFFFF?text=Activity+2'">
+                <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                    <div class="rounded-2xl bg-navy-900/80 backdrop-blur-md border border-white/10 p-3.5 text-white border-l-4 border-l-amber-400">
+                        <span class="text-xs text-amber-400 font-medium">สิ่งอำนวยความสะดวก</span>
+                        <h4 class="font-bold text-base leading-snug">ห้องสมุดดิจิทัลและพื้นที่ Co-Learning Space</h4>
+                    </div>
+                </div>
+            </div>
+
+            <div class="group relative rounded-3xl overflow-hidden shadow-lg h-64 lg:h-auto">
+                <img src="https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=600&auto=format&fit=crop" alt="Activity 3" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" onerror="this.src='https://placehold.co/600x400/0B132B/FFFFFF?text=Activity+3'">
+                <div class="absolute inset-0 p-4 flex flex-col justify-end">
+                    <div class="rounded-2xl bg-navy-900/80 backdrop-blur-md border border-white/10 p-3.5 text-white border-l-4 border-l-amber-400">
+                        <span class="text-xs text-amber-400 font-medium">กีฬาและนันทนาการ</span>
+                        <h4 class="font-bold text-base leading-snug">ศูนย์กีฬาและสระว่ายน้ำมาตรฐานสากล</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call To Action Bar -->
+    <section class="px-4 sm:px-6 lg:px-8 pb-24">
+        <div class="max-w-7xl mx-auto relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-navy-950 via-navy-900 to-[#3A506B] text-white p-8 sm:p-12 border border-amber-400/30 shadow-2xl">
+            <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-amber-400/15 blur-2xl"></div>
+            <div class="absolute -left-16 -bottom-20 w-72 h-72 rounded-full bg-blue-400/10 blur-2xl"></div>
+            <div class="absolute inset-0 grid-lines opacity-40"></div>
+            <div class="relative flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+                <div>
+                    <h3 class="text-2xl sm:text-3xl font-bold">พร้อมที่จะเป็นส่วนหนึ่งของโรงเรียนเราหรือยัง?</h3>
+                    <p class="text-slate-300 text-sm mt-2">เข้าสู่ระบบเพื่อใช้งานระบบสารสนเทศนักเรียน หรือสมัครสมาชิกใหม่ได้ทันที</p>
+                </div>
+                <div id="ctaAuthButtons" class="flex flex-wrap justify-center items-center gap-4 shrink-0">
+                    <!-- Dynamic CTA Buttons -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer / Contact Info -->
+    <footer id="contact" class="bg-navy-950 text-slate-400 pt-16 pb-12 border-t-4 border-amber-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-3 gap-10 pb-12 border-b border-white/10">
+            <div class="space-y-4">
+                <div class="flex items-center gap-3 text-white">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-navy-900 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-graduation-cap text-xl"></i>
+                    </div>
+                    <span class="font-bold text-lg">วิทยาลัยอาชีวศึกษาชุมพร</span>
+                </div>
+                <p class="text-sm text-slate-400 leading-relaxed">
+                    123 ถนนนวัตกรรม แขวงลาดยาว เขตจตุจักร กรุงเทพมหานคร 10900
+                </p>
+                <div class="flex items-center gap-3 text-lg pt-2">
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-amber-400 hover:text-navy-900 transition-colors"><i class="fa-brands fa-facebook"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-amber-400 hover:text-navy-900 transition-colors"><i class="fa-brands fa-youtube"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center hover:bg-amber-400 hover:text-navy-900 transition-colors"><i class="fa-brands fa-line"></i></a>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h4 class="text-white font-semibold section-kicker text-amber-300">การติดต่อสอบถาม</h4>
+                <div class="space-y-3 text-sm">
+                    <p class="flex items-center gap-3"><span class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center"><i class="fa-solid fa-phone text-amber-500"></i></span> 02-123-4567</p>
+                    <p class="flex items-center gap-3"><span class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center"><i class="fa-solid fa-envelope text-amber-500"></i></span> info@futurescience.ac.th</p>
+                    <p class="flex items-center gap-3"><span class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center"><i class="fa-solid fa-clock text-amber-500"></i></span> จันทร์ - ศุกร์ : 08:00 - 16:30 น.</p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <h4 class="text-white font-semibold section-kicker text-amber-300">ทางลัดระบบบริการ</h4>
+                <div class="flex flex-col space-y-2.5 text-sm">
+                    <a href="login.html" class="px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 hover:border-amber-400/50 hover:text-white transition-colors"><i class="fa-solid fa-angle-right text-amber-500 mr-2"></i>ระบบสารสนเทศนักเรียน (เข้าสู่ระบบ)</a>
+                    <a href="register.html" class="px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 hover:border-amber-400/50 hover:text-white transition-colors"><i class="fa-solid fa-angle-right text-amber-500 mr-2"></i>ลงทะเบียนนักเรียนใหม่</a>
+                    <a href="#programs" class="px-4 py-2.5 rounded-xl bg-white/5 border border-white/5 hover:border-amber-400/50 hover:text-white transition-colors"><i class="fa-solid fa-angle-right text-amber-500 mr-2"></i>ตรวจสอบหลักสูตรการศึกษา</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 text-center text-xs text-slate-500">
+            &copy; 2026 Future Science School. All rights reserved. Designed for Educational Excellence.
+        </div>
+    </footer>
+
+    <!-- ================= SLIDE-OUT ANNOUNCEMENT / NEWS DRAWER ================= -->
+    <aside id="newsDrawer" class="fixed top-0 right-0 h-full w-full sm:w-[480px] bg-navy-900 text-slate-100 z-50 shadow-2xl sm:rounded-l-3xl transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col justify-between overflow-hidden">
+        <!-- Header -->
+        <div class="p-5 bg-gradient-to-br from-navy-950 via-navy-900 to-[#3A506B] border-b-4 border-amber-400 flex items-center justify-between shadow-md">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-navy-900 flex items-center justify-center font-bold text-lg shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-bullhorn"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-white leading-tight">ประกาศ & ข่าวสารประชาสัมพันธ์</h3>
+                    <p class="text-xs text-amber-400">ข่าวสารล่าสุดจากวิทยาลัยอาชีวศึกษาชุมพร</p>
+                </div>
+            </div>
+            <button onclick="closeNewsDrawer()" class="text-slate-300 hover:text-amber-300 p-2 rounded-full hover:bg-white/10 transition-colors">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+        </div>
+
+        <!-- News Content List -->
+        <div id="newsDrawerContent" class="flex-1 p-5 overflow-y-auto space-y-4 bg-navy-950/70">
+            <!-- Render Dynamic News Cards via JavaScript -->
+        </div>
+
+        <!-- Footer -->
+        <div class="p-4 border-t border-white/10 bg-navy-900/90 text-center text-xs text-slate-500">
+            วิทยาลัยอาชีวศึกษาชุมพร &copy; 2026 All Rights Reserved.
+        </div>
+    </aside>
+
+    <!-- ================= POPUP แจ้งเตือนประกาศใหม่ ================= -->
+    <div id="newsPopup" class="fixed inset-0 z-[70] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="newsPopupTitle">
+        <div class="absolute inset-0 bg-navy-950/75 backdrop-blur-sm" onclick="closeNewsPopup()"></div>
+        <div class="news-popup-card relative w-full max-w-md bg-navy-900 text-slate-100 rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[88vh]">
+            <div class="p-5 bg-gradient-to-br from-navy-950 via-navy-900 to-[#3A506B] border-b-4 border-amber-400 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="relative w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-navy-900 flex items-center justify-center text-lg shadow-lg shadow-amber-500/20">
+                        <i class="fa-solid fa-bell news-bell"></i>
+                        <span class="news-dot on"></span>
+                    </div>
+                    <div>
+                        <h3 id="newsPopupTitle" class="font-bold text-base text-white leading-tight">มีประกาศใหม่</h3>
+                        <p id="newsPopupSub" class="text-xs text-amber-400">ประกาศ & ข่าวสารล่าสุด</p>
+                    </div>
+                </div>
+                <button onclick="closeNewsPopup()" class="text-slate-300 hover:text-amber-300 p-2 rounded-full hover:bg-white/10 transition-colors" aria-label="ปิด">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <div id="newsPopupBody" class="p-5 space-y-3 overflow-y-auto bg-navy-950/70"></div>
+            <div class="p-4 border-t border-white/10 bg-navy-900 flex items-center gap-3">
+                <button onclick="closeNewsPopup()" class="flex-1 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-sm font-medium transition-colors">ปิด</button>
+                <button onclick="openNewsDrawer()" class="btn-gold flex-1 py-2.5 rounded-full text-sm font-bold flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bullhorn"></i><span>ดูประกาศทั้งหมด</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // URL ของ Google Apps Script Web App
+        // [ความปลอดภัย] escape ชื่อผู้ใช้ก่อนแทรกลง HTML (กัน XSS จากชื่อที่สมัครไว้)
+        function escName(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgkaA8d9v4jHKqN1Sp4K4t_NXzWMR8NqEVYhC2R6doJv0Pg6YNPF8wlAIVi2fLOSvo/exec';
+
+        // รูปโปรไฟล์เริ่มต้น
+        const DEFAULT_AVATAR = "photo/icon1.png";
+
+        // รวบรวมตัวระบุบัญชีที่ล็อกอินอยู่ (อีเมล / รหัส) เพื่อใช้ค้นหาในชีต Students
+        function getStudentIdentifiers(user) {
+            const list = [user.email, user.studentCode, user.userCode, user.studentId, user.code, user.username]
+                .map(v => String(v || '').trim().toLowerCase())
+                .filter(v => v && v !== '-');
+            return [...new Set(list)];
+        }
+
+        // ดึง StudentCode จากชีต Students ให้ตรงกับบัญชีที่ล็อกอินอยู่ (ยิงพร้อมกันทุกตัวระบุ เร็วกว่าเดิม)
+        async function loadStudentCodeFromSheet(user) {
+            const el = document.getElementById('sidebarStudentCode');
+            if (!el || !SCRIPT_URL) return;
+            const candidates = getStudentIdentifiers(user);
+
+            const results = await Promise.all(candidates.map(async (id) => {
+                try {
+                    const res = await fetch(`${SCRIPT_URL}?action=get_user_profile&role=student&identifier=${encodeURIComponent(id)}`);
+                    const result = await res.json();
+                    if (result.status === 'success' && result.user) {
+                        const code = String(result.user.userCode || '').trim();
+                        if (code) return { id: id, code: code };
+                    }
+                } catch (e) {
+                    console.error('โหลดรหัสนักศึกษาไม่สำเร็จ:', e);
+                }
+                return null;
+            }));
+
+            const found = results.find(r => r);
+            if (found) {
+                el.textContent = `รหัส: ${found.code}`;
+                try { localStorage.setItem('studentCodeCache', JSON.stringify(found)); } catch (e) {}
+            } else if (el.textContent.includes('กำลังโหลด')) {
+                el.textContent = 'รหัส: -';
+            }
+        }
+
+        function showPageContent() {
+            const pageBody = document.getElementById('pageBody');
+            if (pageBody) {
+                pageBody.classList.remove('auth-checking');
+                pageBody.classList.add('auth-ready');
+            }
+        }
+
+        // ================= นับจำนวนนักเรียน/ครู (เฉพาะหน้าที่ยังไม่ล็อกอิน) =================
+        function setCountText(id, value) {
+            const el = document.getElementById(id);
+            if (el && value !== null && value !== undefined) el.textContent = Number(value).toLocaleString('th-TH');
+        }
+
+        function applyCachedCounts() {
+            try {
+                const c = JSON.parse(localStorage.getItem('siteCountsCache') || 'null');
+                if (c) {
+                    setCountText('statStudents', c.students);
+                    setCountText('statTeachers', c.teachers);
+                }
+            } catch (e) {}
+        }
+
+        async function loadSiteCounts() {
+            applyCachedCounts(); // โชว์ค่าล่าสุดทันที ไม่ต้องรอเครือข่าย
+            try {
+                const res = await fetch(`${SCRIPT_URL}?action=get_counts`);
+                const r = await res.json();
+                if (r.status === 'success') {
+                    setCountText('statStudents', r.students);
+                    setCountText('statTeachers', r.teachers);
+                    localStorage.setItem('siteCountsCache', JSON.stringify({ students: r.students, teachers: r.teachers }));
+                }
+            } catch (e) {
+                console.error('โหลดจำนวนผู้ใช้ไม่สำเร็จ:', e);
+            }
+        }
+
+        // ================= ปุ่มออกจากระบบ (แสดงเฉพาะผู้ที่ล็อกอิน) =================
+        function renderSidebarFooterLoggedIn() {
+            return `
+                <button onclick="logout()" class="flex items-center justify-center gap-2 w-full py-3 rounded-full bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-100 font-medium text-sm transition-colors">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>ออกจากระบบ</span>
+                </button>
+            `;
+        }
+
+        function updateUIState() {
+            const profileContainer = document.getElementById('sidebarProfile');
+            const userMenuItems = document.getElementById('userMenuItems');
+            const sidebarFooter = document.getElementById('sidebarFooter');
+            const quickStatsOrShortcuts = document.getElementById('quickStatsOrShortcuts');
+            
+            const navAuthButtons = document.getElementById('navAuthButtons');
+            const heroAuthButtons = document.getElementById('heroAuthButtons');
+            const ctaAuthButtons = document.getElementById('ctaAuthButtons');
+            const mobileHeaderBtn = document.getElementById('mobileHeaderBtn');
+            const mobileMenuAuth = document.getElementById('mobileMenuAuth');
+
+            const workMenuLink = document.getElementById('workMenuLink');
+            const workMenuIcon = document.getElementById('workMenuIcon');
+            const workMenuText = document.getElementById('workMenuText');
+
+            const loggedInTeacher = sessionStorage.getItem('loggedInTeacher') || localStorage.getItem('savedTeacherProfile');
+            const loggedInUser = sessionStorage.getItem('loggedInUser') || localStorage.getItem('savedUserProfile');
+
+            if (loggedInTeacher) {
+                const teacher = JSON.parse(loggedInTeacher);
+
+                const displayName = escName(teacher.fullName || "ครูผู้สอน");
+                const displayLabel = `gmail: ${teacher.email || "-"}`;
+                const displayAvatar = teacher.avatar || DEFAULT_AVATAR;
+                const institutionName = teacher.institution || "วิทยาลัยอาชีวศึกษาชุมพร";
+
+                const statusTagsHtml = `
+                    <div class="flex flex-col gap-1 mt-1.5 items-start">
+                        <span class="inline-block text-[11px] text-slate-200 bg-white/10 px-2 py-0.5 rounded-full font-medium">
+                            บุคลากร/ครู
+                        </span>
+                        ${institutionName ? `
+                            <span class="inline-block text-[11px] text-slate-200 bg-white/10 px-2 py-0.5 rounded-full font-medium truncate max-w-[190px]">
+                                ${institutionName}
+                            </span>
+                        ` : ''}
+                    </div>
+                `;
+
+                const historyLinkT = document.getElementById('historyMenuLink');
+                if (historyLinkT) historyLinkT.style.display = 'none';
+                const tchHistLink = document.getElementById('teacherHistoryMenuLink');
+                if (tchHistLink) tchHistLink.style.display = '';
+                if (quickStatsOrShortcuts) quickStatsOrShortcuts.className = 'grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-center';
+                if (workMenuLink) workMenuLink.href = "teacher-home.html";
+                if (workMenuIcon) workMenuIcon.className = "fa-solid fa-pen-to-square w-5 text-center text-blue-900";
+                if (workMenuText) workMenuText.innerText = "สั่งงาน / สั่งการบ้าน";
+
+                // แปลงแถบด้านล่างเป็นปุ่มลัดสำหรับครู
+                if (quickStatsOrShortcuts) {
+                    quickStatsOrShortcuts.innerHTML = `
+                        <button onclick="openNewsDrawer()" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-amber-400 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 cursor-pointer">
+                            <span class="relative w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-bullhorn"></i>
+                                <span class="news-dot" data-news-dot style="border-color:#fff;"></span>
+                            </span>
+                            <span class="font-bold text-slate-800 text-sm sm:text-base group-hover:text-amber-600 transition-colors">ประกาศ & ข่าวสาร</span>
+                        </button>
+                        <a href="teacher-home.html" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-blue-900 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </span>
+                            <span class="font-bold text-blue-900 text-sm sm:text-base">สั่งงาน / สั่งการบ้าน</span>
+                        </a>
+                        <a href="javascript:void(0)" onclick="openGuideModal()" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-indigo-700 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-book-open-reader"></i>
+                            </span>
+                            <span class="font-bold text-slate-800 text-sm sm:text-base group-hover:text-blue-900 transition-colors">คู่มือการใช้งาน</span>
+                        </a>
+                        <a href="assign-history.html" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-emerald-500 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform"><i class="fa-solid fa-folder-open"></i></span>
+                            <span class="font-bold text-slate-800 text-sm sm:text-base group-hover:text-emerald-600 transition-colors">ประวัติการสั่งงาน</span>
+                        </a>
+                    `;
+                }
+
+                profileContainer.innerHTML = `
+                    <img src="${displayAvatar}" alt="User Profile" class="w-14 h-14 rounded-full object-cover border-2 border-amber-400 shadow-md shrink-0">
+                    <div class="overflow-hidden">
+                        <h3 class="font-bold text-base leading-tight truncate">${displayName}</h3>
+                        <p class="text-xs text-amber-300 font-medium truncate">${displayLabel}</p>
+                        ${statusTagsHtml}
+                    </div>
+                `;
+
+                if (userMenuItems) userMenuItems.style.display = 'block';
+
+                sidebarFooter.innerHTML = renderSidebarFooterLoggedIn();
+
+                if (navAuthButtons) {
+                    navAuthButtons.innerHTML = `
+                        <button onclick="openSidebar()" class="chip-user flex items-center gap-2.5 pl-1.5 pr-4 py-1.5 rounded-full font-medium text-sm">
+                            <img src="${displayAvatar}" class="w-7 h-7 rounded-full object-cover border border-amber-400">
+                            <span>${displayName}</span>
+                        </button>
+                    `;
+                }
+
+                if (heroAuthButtons) {
+                    heroAuthButtons.innerHTML = `
+                        <button onclick="openSidebar()" class="btn-gold px-7 py-3.5 rounded-full font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-gauge-high"></i> เข้าสู่ระบบสารสนเทศ (สวัสดี, ${displayName})
+                        </button>
+                    `;
+                }
+
+                if (ctaAuthButtons) {
+                    ctaAuthButtons.innerHTML = `
+                        <button onclick="openSidebar()" class="btn-gold px-6 py-3 rounded-full font-semibold text-sm">
+                            <i class="fa-solid fa-user mr-1"></i> เข้าสู่ระบบสารสนเทศ
+                        </button>
+                    `;
+                }
+
+                if (mobileHeaderBtn) {
+                    mobileHeaderBtn.innerHTML = `
+                        <button onclick="openSidebar()" class="p-1 rounded-full border border-amber-400">
+                            <img src="${displayAvatar}" class="w-7 h-7 rounded-full object-cover">
+                        </button>
+                    `;
+                }
+
+                if (mobileMenuAuth) {
+                    mobileMenuAuth.innerHTML = `
+                        <button onclick="openSidebar(); toggleMobileMenu();" class="w-full py-2.5 text-center rounded-xl bg-blue-900 text-white font-medium text-sm block">
+                            <i class="fa-solid fa-user mr-1.5"></i> โปรไฟล์ของคุณ
+                        </button>
+                    `;
+                }
+
+            } else if (loggedInUser) {
+                const user = JSON.parse(loggedInUser);
+                const displayName = escName(user.fullName || user.name || "นักเรียน");
+                
+                // ดึงรหัสนักศึกษาอย่างแม่นยำทุกฟิลด์ที่เป็นไปได้
+                const studentIdCandidates = getStudentIdentifiers(user);
+                let cachedStudentCode = "";
+                try {
+                    const cache = JSON.parse(localStorage.getItem('studentCodeCache') || 'null');
+                    if (cache && cache.code && studentIdCandidates.includes(cache.id)) cachedStudentCode = cache.code;
+                } catch (e) {}
+                const displayLabel = `รหัส: ${cachedStudentCode || 'กำลังโหลด...'}`;
+                const displayAvatar = user.avatar || DEFAULT_AVATAR;
+
+                const statusTagsHtml = `
+                    <span class="inline-block mt-1 text-[11px] text-slate-200 bg-white/10 px-2 py-0.5 rounded-full font-medium">
+                        ${user.className || user.studentLevel || "นักเรียน"}
+                    </span>
+                `;
+
+                const historyLinkS = document.getElementById('historyMenuLink');
+                if (historyLinkS) historyLinkS.style.display = '';
+                const tchHistLinkS = document.getElementById('teacherHistoryMenuLink');
+                if (tchHistLinkS) tchHistLinkS.style.display = 'none';
+                if (quickStatsOrShortcuts) quickStatsOrShortcuts.className = 'grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-center';
+                if (workMenuLink) workMenuLink.href = "student-home.html";
+                if (workMenuIcon) workMenuIcon.className = "fa-solid fa-file-arrow-up w-5 text-center text-blue-900";
+                if (workMenuText) workMenuText.innerText = "ส่งงาน / การบ้าน";
+
+                // แปลงแถบด้านล่างเป็นปุ่มลัดสำหรับนักเรียน
+                if (quickStatsOrShortcuts) {
+                    quickStatsOrShortcuts.innerHTML = `
+                        <button onclick="openNewsDrawer()" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-amber-400 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 cursor-pointer">
+                            <span class="relative w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-bullhorn"></i>
+                                <span class="news-dot" data-news-dot style="border-color:#fff;"></span>
+                            </span>
+                            <span class="font-bold text-slate-800 text-sm sm:text-base group-hover:text-amber-600 transition-colors">ประกาศ & ข่าวสาร</span>
+                        </button>
+                        <a href="student-home.html" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-blue-900 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-file-arrow-up"></i>
+                            </span>
+                            <span class="font-bold text-blue-900 text-sm sm:text-base">ส่งงาน / การบ้าน</span>
+                        </a>
+                        <a href="javascript:void(0)" onclick="openGuideModal()" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-indigo-700 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-book-open-reader"></i>
+                            </span>
+                            <span class="font-bold text-slate-800 text-sm sm:text-base group-hover:text-blue-900 transition-colors">คู่มือการใช้งาน</span>
+                        </a>
+                        <a href="submission-history.html" class="stat-card group bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-blue-900 p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+                            <span class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </span>
+                            <span class="font-bold text-slate-800 text-sm sm:text-base group-hover:text-blue-900 transition-colors">ประวัติการส่งงาน</span>
+                        </a>
+                    `;
+                }
+
+                profileContainer.innerHTML = `
+                    <img src="${displayAvatar}" alt="User Profile" class="w-14 h-14 rounded-full object-cover border-2 border-amber-400 shadow-md shrink-0">
+                    <div class="overflow-hidden">
+                        <h3 class="font-bold text-base leading-tight truncate">${displayName}</h3>
+                        <p id="sidebarStudentCode" class="text-xs text-amber-300 font-medium truncate">${displayLabel}</p>
+                        ${statusTagsHtml}
+                    </div>
+                `;
+
+                loadStudentCodeFromSheet(user);
+
+                if (userMenuItems) userMenuItems.style.display = 'block';
+
+                sidebarFooter.innerHTML = renderSidebarFooterLoggedIn();
+
+                if (navAuthButtons) {
+                    navAuthButtons.innerHTML = `
+                        <button onclick="openSidebar()" class="chip-user flex items-center gap-2.5 pl-1.5 pr-4 py-1.5 rounded-full font-medium text-sm">
+                            <img src="${displayAvatar}" class="w-7 h-7 rounded-full object-cover border border-amber-400">
+                            <span>${displayName}</span>
+                        </button>
+                    `;
+                }
+
+                if (heroAuthButtons) {
+                    heroAuthButtons.innerHTML = `
+                        <button onclick="openSidebar()" class="btn-gold px-7 py-3.5 rounded-full font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-gauge-high"></i> เข้าสู่ระบบสารสนเทศ (สวัสดี, ${displayName})
+                        </button>
+                    `;
+                }
+
+                if (ctaAuthButtons) {
+                    ctaAuthButtons.innerHTML = `
+                        <button onclick="openSidebar()" class="btn-gold px-6 py-3 rounded-full font-semibold text-sm">
+                            <i class="fa-solid fa-user mr-1"></i> เข้าสู่ระบบสารสนเทศ
+                        </button>
+                    `;
+                }
+
+                if (mobileHeaderBtn) {
+                    mobileHeaderBtn.innerHTML = `
+                        <button onclick="openSidebar()" class="p-1 rounded-full border border-amber-400">
+                            <img src="${displayAvatar}" class="w-7 h-7 rounded-full object-cover">
+                        </button>
+                    `;
+                }
+
+                if (mobileMenuAuth) {
+                    mobileMenuAuth.innerHTML = `
+                        <button onclick="openSidebar(); toggleMobileMenu();" class="w-full py-2.5 text-center rounded-xl bg-blue-900 text-white font-medium text-sm block">
+                            <i class="fa-solid fa-user mr-1.5"></i> โปรไฟล์ของคุณ
+                        </button>
+                    `;
+                }
+
+            } else {
+                // Default State (ยังไม่ได้เข้าสู่ระบบ) - แสดงข้อมูลสถิติตามปกติ
+                if (quickStatsOrShortcuts) quickStatsOrShortcuts.className = 'grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 text-center';
+                if (quickStatsOrShortcuts) {
+                    quickStatsOrShortcuts.innerHTML = `
+                        <div class="stat-card bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-blue-900 p-6">
+                            <div id="statStudents" class="text-blue-900 text-3xl sm:text-4xl font-extrabold">...</div>
+                            <div class="text-slate-500 text-sm font-medium mt-1">นักเรียนทุกระดับชั้น</div>
+                        </div>
+                        <div class="stat-card bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-indigo-700 p-6">
+                            <div id="statTeachers" class="text-blue-900 text-3xl sm:text-4xl font-extrabold">...</div>
+                            <div class="text-slate-500 text-sm font-medium mt-1">คณาจารย์และบุคลากร</div>
+                        </div>
+                        <div class="stat-card bg-navy-900 rounded-2xl shadow-xl border border-navy-800 border-t-4 border-t-amber-400 p-6">
+                            <div class="text-amber-400 text-3xl sm:text-4xl font-extrabold">98%</div>
+                            <div class="text-slate-300 text-sm font-medium mt-1">สอบเข้ามหาวิทยาลัยได้</div>
+                        </div>
+                        <div class="stat-card bg-white rounded-2xl shadow-xl border border-slate-100 border-t-4 border-t-blue-900 p-6">
+                            <div class="text-blue-900 text-3xl sm:text-4xl font-extrabold">45+</div>
+                            <div class="text-slate-500 text-sm font-medium mt-1">รางวัลการแข่งขันทวิปภาค</div>
+                        </div>
+                    `;
+                }
+
+                profileContainer.innerHTML = `
+                    <div class="w-14 h-14 rounded-full bg-slate-800/80 border-2 border-slate-600 flex items-center justify-center text-slate-300 shadow-md shrink-0">
+                        <i class="fa-solid fa-user text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base leading-tight text-white">กรุณาเข้าสู่ระบบ</h3>
+                        <p class="text-xs text-slate-300 mt-0.5">เข้าสู่ระบบเพื่อเข้าถึงเมนูส่วนตัว</p>
+                    </div>
+                `;
+
+                if (userMenuItems) userMenuItems.style.display = 'none';
+
+                sidebarFooter.innerHTML = `
+                    <a href="login.html" class="btn-navy flex items-center justify-center gap-2 w-full py-3 rounded-full font-medium text-sm">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                        <span>ไปยังหน้าเข้าสู่ระบบ</span>
+                    </a>
+                `;
+
+                if (navAuthButtons) {
+                    navAuthButtons.innerHTML = `
+                        <a href="register.html" class="btn-ghost px-4 py-2.5 rounded-full font-medium text-sm">
+                            <i class="fa-solid fa-user-plus mr-1.5"></i> สมัครสมาชิก
+                        </a>
+                        <a href="login.html" class="btn-gold px-5 py-2.5 rounded-full font-semibold text-sm">
+                            <i class="fa-solid fa-right-to-bracket mr-1.5"></i> เข้าสู่ระบบ
+                        </a>
+                    `;
+                }
+
+                if (heroAuthButtons) {
+                    heroAuthButtons.innerHTML = `
+                        <a href="login.html" class="btn-gold px-7 py-3.5 rounded-full font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-right-to-bracket"></i> เข้าสู่ระบบนักเรียน / บุคลากร
+                        </a>
+                        <a href="register.html" class="btn-ghost px-7 py-3.5 rounded-full font-semibold flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus"></i> สมัครเรียน / สมัครสมาชิก
+                        </a>
+                    `;
+                }
+
+                if (ctaAuthButtons) {
+                    ctaAuthButtons.innerHTML = `
+                        <a href="register.html" class="btn-ghost px-5 py-3 rounded-full font-medium text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-user-plus mr-1"></i> สมัครสมาชิก
+                        </a>
+                        <a href="login.html" class="btn-gold px-6 py-3 rounded-full font-semibold text-sm">
+                            <i class="fa-solid fa-right-to-bracket mr-1"></i> เข้าสู่ระบบ
+                        </a>
+                    `;
+                }
+
+                if (mobileHeaderBtn) {
+                    mobileHeaderBtn.innerHTML = `
+                        <a href="login.html" class="btn-gold px-3.5 py-2 rounded-full font-semibold text-xs">
+                            เข้าสู่ระบบ
+                        </a>
+                    `;
+                }
+
+                if (mobileMenuAuth) {
+                    mobileMenuAuth.innerHTML = `
+                        <a href="register.html" class="w-full py-2.5 text-center rounded-xl border border-blue-900 text-blue-900 font-medium text-sm block">
+                            <i class="fa-solid fa-user-plus mr-1.5"></i> สมัครสมาชิก
+                        </a>
+                    `;
+                }
+
+                loadSiteCounts();
+            }
+
+            // แสดงผลหน้าจอทันทีที่สลับสถานะเสร็จโดยไม่ติดกระพริบ
+            showPageContent();
+        }
+
+        // ทำงานทันทีเมื่อโหลด DOM เพื่อไม่ให้รอรูปภาพหรือ Three.js โหลดเสร็จก่อน
+        updateUIState();
+
+        function logout() {
+            sessionStorage.removeItem('loggedInTeacher');
+            sessionStorage.removeItem('loggedInUser');
+            localStorage.removeItem('savedTeacherProfile');
+            localStorage.removeItem('savedUserProfile');
+            localStorage.removeItem('studentCodeCache');
+            updateUIState();
+            closeSidebar();
+        }
+
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        // ================= ANNOUNCEMENTS / NEWS DRAWER SYSTEM =================
+        async function fetchAnnouncementsFromSheet() {
+            if (!SCRIPT_URL || SCRIPT_URL.includes('YOUR_APP_SCRIPT_ID_HERE')) return;
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=get_announcements`);
+                const result = await response.json();
+                if (result.status === 'success' && Array.isArray(result.announcements)) {
+                    localStorage.setItem('adminAnnouncements', JSON.stringify(result.announcements));
+                    return result.announcements;
+                }
+            } catch (err) {
+                console.error("ไม่สามารถโหลดประกาศจาก Google Sheet ได้:", err);
+            }
+            return null;
+        }
+
+        async function openNewsDrawer() {
+            const drawer = document.getElementById('newsDrawer');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            closeNewsPopup();
+
+            // จำไว้ว่าอันไหน "ใหม่" (ยังไม่เคยเปิดอ่าน) เพื่อติดป้าย แล้วตัดจุดแดงออก
+            newsNewIds = new Set(getUnseenAnnouncements().map(a => String(a.id)));
+            renderNewsDrawerContent();
+            markAnnouncementsSeen();
+
+            drawer.classList.remove('translate-x-full');
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+
+            await fetchAnnouncementsFromSheet();
+            getUnseenAnnouncements().forEach(a => newsNewIds.add(String(a.id)));
+            renderNewsDrawerContent();
+            markAnnouncementsSeen();
+        }
+
+        function closeNewsDrawer() {
+            const drawer = document.getElementById('newsDrawer');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            drawer.classList.add('translate-x-full');
+            overlay.classList.remove('opacity-100');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function renderNewsDrawerContent() {
+            const container = document.getElementById('newsDrawerContent');
+            const announcements = JSON.parse(localStorage.getItem('adminAnnouncements') || '[]');
+
+            if (announcements.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-16 px-4">
+                        <div class="w-16 h-16 bg-slate-800/80 rounded-full flex items-center justify-center mx-auto text-amber-500 mb-4 text-2xl border border-slate-700">
+                            <i class="fa-regular fa-newspaper"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-300 text-sm">ยังไม่มีประกาศหรือข่าวสารในขณะนี้</h4>
+                        <p class="text-xs text-slate-500 mt-1">ประกาศและข่าวสารจากผู้ดูแลระบบจะปรากฏที่นี่</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            announcements.forEach((item) => {
+                const isNew = newsNewIds.has(String(item.id));
+                const linkButtonHtml = /^https?:\/\//i.test(item.fileLink || '') ? `
+                    <a href="${newsEsc(item.fileLink)}" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 text-amber-300 text-xs font-semibold transition-all">
+                        <i class="fa-solid fa-paperclip text-amber-400"></i>
+                        <span>เปิดลิงก์ Google Drive / เอกสารแนบ</span>
+                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ml-auto"></i>
+                    </a>
+                ` : '';
+
+                html += `
+                    <div class="bg-white/5 border ${isNew ? 'border-red-500/60 ring-1 ring-red-500/40' : 'border-white/10'} hover:border-amber-400/50 rounded-3xl p-4 sm:p-5 pl-5 sm:pl-6 shadow-xl transition-all duration-200 space-y-3 relative overflow-hidden group">
+                        <div class="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-400 via-blue-500 to-indigo-500"></div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-xs pt-1">
+                            <span class="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-semibold tracking-wide flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></span>
+                                ${newsEsc(item.category || 'ข่าวประกาศทั่วไป')}
+                            </span>
+                            <span class="text-slate-400 text-[11px] font-medium flex items-center gap-1.5 bg-slate-800/60 px-2.5 py-1 rounded-lg border border-slate-700/50">
+                                <i class="fa-regular fa-clock text-amber-400"></i>
+                                ${newsEsc(item.date || '-')}
+                            </span>
+                        </div>
+
+                        <h4 class="font-bold text-base text-white leading-snug group-hover:text-amber-300 transition-colors">
+                            ${isNew ? '<span class="inline-flex items-center gap-1 align-middle mr-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-[10px] font-bold tracking-wide"><span class="w-1.5 h-1.5 rounded-full bg-white"></span>ใหม่</span>' : ''}${newsEsc(item.title || 'ไม่มีหัวข้อ')}
+                        </h4>
+
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed font-light whitespace-pre-line bg-navy-950/60 p-3 rounded-2xl border border-white/5">
+                            ${newsEsc(item.content || '-')}
+                        </p>
+                        
+                        ${linkButtonHtml}
+
+                        <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+                            <span class="flex items-center gap-1.5">
+                                <i class="fa-solid fa-user-shield text-slate-500"></i>
+                                ผู้ประกาศ: <strong class="text-slate-300 font-medium">${newsEsc(item.author || 'ผู้ดูแลระบบ (Admin)')}</strong>
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ================= แจ้งเตือนประกาศใหม่ (Popup เด้งหน้าเว็บ + จุดแดง) =================
+        var NEWS_SEEN_KEY  = 'seenAnnouncementIds';          // ประกาศที่ผู้ใช้เปิดอ่านในลิ้นชักแล้ว (ใช้ตัดจุดแดง)
+        var NEWS_POPUP_KEY = 'popupShownAnnouncementIds';    // ประกาศที่เคยเด้งแจ้งเตือนแล้ว (ไม่เด้งซ้ำ)
+        var NEWS_POLL_MS   = 60000;                          // เช็คประกาศใหม่ทุก 60 วินาที
+        var NEWS_POPUP_MAX = 3;                              // แสดงในป๊อปอัปสูงสุดกี่รายการ
+        var newsNewIds = new Set();
+        var newsLastCheck = 0;
+
+        function readIdList(key) {
+            try { const v = JSON.parse(localStorage.getItem(key) || '[]'); return Array.isArray(v) ? v.map(String) : []; }
+            catch (e) { return []; }
+        }
+        function writeIdList(key, list) {
+            try { localStorage.setItem(key, JSON.stringify([...new Set(list.map(String))])); } catch (e) {}
+        }
+        function getCachedAnnouncements() {
+            try { const a = JSON.parse(localStorage.getItem('adminAnnouncements') || '[]'); return Array.isArray(a) ? a : []; }
+            catch (e) { return []; }
+        }
+        function getUnseenAnnouncements() {
+            const seen = new Set(readIdList(NEWS_SEEN_KEY));
+            return getCachedAnnouncements().filter(a => a && a.id && !seen.has(String(a.id)));
+        }
+        function markAnnouncementsSeen() {
+            const ids = getCachedAnnouncements().filter(a => a && a.id).map(a => String(a.id));
+            writeIdList(NEWS_SEEN_KEY, readIdList(NEWS_SEEN_KEY).concat(ids));
+            updateNewsBadges();
+        }
+        function newsEsc(s) {
+            return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        // เรียงใหม่สุดก่อน (ใช้ตัวเลขเวลาใน id เช่น ann_1731999999999 ถ้าไม่มีใช้ลำดับในชีต)
+        function sortNewestFirst(list) {
+            return list.map((a, i) => {
+                const m = String(a.id).match(/(\d{10,})/);
+                return { a: a, k: m ? Number(m[1]) : i };
+            }).sort((x, y) => y.k - x.k).map(o => o.a);
+        }
+
+        function updateNewsBadges() {
+            const n = getUnseenAnnouncements().length;
+            document.querySelectorAll('[data-news-dot]').forEach(el => el.classList.toggle('on', n > 0));
+            document.querySelectorAll('[data-news-count]').forEach(el => {
+                el.classList.toggle('on', n > 0);
+                el.textContent = n > 0 ? (n > 99 ? '99+' : n) + ' ใหม่' : '';
+            });
+        }
+
+        function isNewsDrawerOpen() {
+            const d = document.getElementById('newsDrawer');
+            return d && !d.classList.contains('translate-x-full');
+        }
+        function isNewsPopupOpen() {
+            const p = document.getElementById('newsPopup');
+            return p && !p.classList.contains('hidden');
+        }
+
+        function showNewsPopup(items) {
+            const popup = document.getElementById('newsPopup');
+            const body = document.getElementById('newsPopupBody');
+            if (!popup || !body) return;
+
+            const sorted = sortNewestFirst(items);
+            const shown = sorted.slice(0, NEWS_POPUP_MAX);
+            const more = sorted.length - shown.length;
+
+            document.getElementById('newsPopupTitle').textContent = sorted.length > 1 ? `มีประกาศใหม่ ${sorted.length} รายการ` : 'มีประกาศใหม่';
+
+            body.innerHTML = shown.map(item => {
+                const link = /^https?:\/\//i.test(item.fileLink || '') ? `
+                    <a href="${newsEsc(item.fileLink)}" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-amber-400/10 hover:bg-amber-400/20 border border-amber-400/30 text-amber-300 text-xs font-semibold transition-all">
+                        <i class="fa-solid fa-paperclip text-amber-400"></i><span>เปิดเอกสารแนบ</span>
+                    </a>` : '';
+                return `
+                    <div class="relative bg-white/5 border border-red-500/40 rounded-2xl p-4 pl-5 overflow-hidden">
+                        <div class="absolute top-0 left-0 bottom-0 w-1.5 bg-gradient-to-b from-red-500 via-amber-400 to-amber-300"></div>
+                        <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] mb-2">
+                            <span class="px-2.5 py-1 rounded-full bg-red-500 text-white font-bold">ใหม่</span>
+                            <span class="text-slate-300 flex items-center gap-1.5"><i class="fa-regular fa-clock text-amber-400"></i>${newsEsc(item.date || '-')}</span>
+                        </div>
+                        <div class="text-[11px] text-blue-300 font-semibold mb-1">${newsEsc(item.category || 'ข่าวประกาศทั่วไป')}</div>
+                        <h4 class="font-bold text-base text-white leading-snug">${newsEsc(item.title || 'ไม่มีหัวข้อ')}</h4>
+                        <p class="mt-2 text-xs sm:text-sm text-slate-300 leading-relaxed font-light whitespace-pre-line line-clamp-4">${newsEsc(item.content || '')}</p>
+                        ${link}
+                    </div>`;
+            }).join('') + (more > 0 ? `<p class="text-center text-xs text-slate-400 pt-1">และอีก ${more} ประกาศ — กด “ดูประกาศทั้งหมด”</p>` : '');
+
+            // จำว่าเด้งแล้ว จะได้ไม่เด้งซ้ำ (จุดแดงยังอยู่จนกว่าจะเปิดอ่าน)
+            writeIdList(NEWS_POPUP_KEY, readIdList(NEWS_POPUP_KEY).concat(sorted.map(a => String(a.id))));
+
+            popup.classList.remove('hidden');
+            popup.classList.add('flex');
+        }
+
+        function closeNewsPopup() {
+            const popup = document.getElementById('newsPopup');
+            if (!popup) return;
+            popup.classList.add('hidden');
+            popup.classList.remove('flex');
+        }
+
+        async function checkNewAnnouncements() {
+            newsLastCheck = Date.now();
+            await fetchAnnouncementsFromSheet();
+            updateNewsBadges();
+            if (isNewsPopupOpen() || isNewsDrawerOpen()) return;
+
+            const popped = new Set(readIdList(NEWS_POPUP_KEY));
+            const fresh = getUnseenAnnouncements().filter(a => !popped.has(String(a.id)));
+            if (fresh.length) showNewsPopup(fresh);
+        }
+
+        function startNewsPolling() {
+            setInterval(() => { if (!document.hidden) checkNewAnnouncements(); }, NEWS_POLL_MS);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden && Date.now() - newsLastCheck > 15000) checkNewAnnouncements();
+            });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeNewsPopup(); });
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        }
+
+        // ================= 3D INTERACTIVE SCI-FI HOLOGRAPHIC GLOBE & RINGS =================
+        function init3DSciFiModel() {
+            const container = document.getElementById('school3DContainer');
+            if (!container || typeof THREE === 'undefined') return;
+
+            const scene = new THREE.Scene();
+            scene.background = null;
+
+            const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 18);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.enableZoom = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 1.2;
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0x38bdf8, 1.5);
+            scene.add(ambientLight);
+
+            const pointLight = new THREE.PointLight(0x60a5fa, 3, 50);
+            pointLight.position.set(10, 10, 10);
+            scene.add(pointLight);
+
+            // Sci-Fi Group
+            const sciFiGroup = new THREE.Group();
+
+            // Inner Glowing Sphere (Core)
+            const coreGeo = new THREE.SphereGeometry(2.5, 32, 32);
+            const coreMat = new THREE.MeshStandardMaterial({
+                color: 0x0284c7,
+                emissive: 0x0369a1,
+                emissiveIntensity: 0.6,
+                roughness: 0.2,
+                metalness: 0.8,
+                wireframe: true
+            });
+            const coreSphere = new THREE.Mesh(coreGeo, coreMat);
+            sciFiGroup.add(coreSphere);
+
+            // Outer Orbiting Rings (Holographic Style)
+            const ringMat1 = new THREE.MeshBasicMaterial({ color: 0x38bdf8, wireframe: true, transparent: true, opacity: 0.7 });
+            const ringMat2 = new THREE.MeshBasicMaterial({ color: 0x818cf8, wireframe: true, transparent: true, opacity: 0.5 });
+            const ringMat3 = new THREE.MeshBasicMaterial({ color: 0xfacc15, wireframe: true, transparent: true, opacity: 0.6 });
+
+            const ring1 = new THREE.Mesh(new THREE.TorusGeometry(4.2, 0.08, 16, 100), ringMat1);
+            ring1.rotation.x = Math.PI / 3;
+            sciFiGroup.add(ring1);
+
+            const ring2 = new THREE.Mesh(new THREE.TorusGeometry(5.5, 0.06, 16, 100), ringMat2);
+            ring2.rotation.y = Math.PI / 4;
+            sciFiGroup.add(ring2);
+
+            const ring3 = new THREE.Mesh(new THREE.TorusGeometry(6.8, 0.05, 16, 100), ringMat3);
+            ring3.rotation.z = Math.PI / 5;
+            sciFiGroup.add(ring3);
+
+            // Floating Particles Field
+            const particleCount = 400;
+            const particleGeo = new THREE.BufferGeometry();
+            const particlePositions = new Float32Array(particleCount * 3);
+
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                particlePositions[i] = (Math.random() - 0.5) * 20;
+                particlePositions[i + 1] = (Math.random() - 0.5) * 20;
+                particlePositions[i + 2] = (Math.random() - 0.5) * 20;
+            }
+
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+            const particleMat = new THREE.PointsMaterial({ color: 0x38bdf8, size: 0.12, transparent: true, opacity: 0.8 });
+            const particleSystem = new THREE.Points(particleGeo, particleMat);
+            sciFiGroup.add(particleSystem);
+
+            scene.add(sciFiGroup);
+
+            // Animation Loop
+            let animationFrameId;
+            function animate() {
+                animationFrameId = requestAnimationFrame(animate);
+                
+                coreSphere.rotation.y += 0.008;
+                ring1.rotation.z += 0.01;
+                ring2.rotation.x -= 0.008;
+                ring3.rotation.y += 0.006;
+                particleSystem.rotation.y -= 0.002;
+
+                controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                if (!container) return;
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'adminAnnouncements') {
+                renderNewsDrawerContent();
+                updateNewsBadges();
+            }
+            if (e.key === NEWS_SEEN_KEY) updateNewsBadges();
+        });
+
+        // รันงานเบื้องหลัง (3D และโหลดประกาศ) หลังจากหน้าเว็บแสดงผลแล้ว
+        document.addEventListener('DOMContentLoaded', () => {
+            updateNewsBadges();        // โชว์จุดแดงจากข้อมูลที่แคชไว้ทันที
+            checkNewAnnouncements();   // โหลดประกาศล่าสุด + เด้ง Popup ถ้ามีของใหม่
+            startNewsPolling();        // เช็คซ้ำเป็นระยะระหว่างเปิดหน้าเว็บ
+            init3DSciFiModel();
+            if (localStorage.getItem('autoOpenSidebar') === 'true') {
+                openSidebar();
+                localStorage.removeItem('autoOpenSidebar');
+            }
+        });
+    </script>
+    <!-- ===== ระบบคู่มือการใช้งาน ===== -->
+    <script>
+/* ==========================================================
+   ระบบ "คู่มือการใช้งาน" (ดูคลิปครบ -> ได้เกียรติบัตร)  v2
+   ฝังอยู่ใน index.html — ใช้ตัวแปร SCRIPT_URL ของหน้า index
+   ========================================================== */
+(function () {
+  'use strict';
+
+  var S = {
+    sess: null, guides: [], guide: null, idx: 0,
+    view: 'list', prog: {}, dirty: 0, timer: null, loading: false
+  };
+  var certImgCache = {};
+  var drawToken = 0;
+
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function num(v, d) { v = Number(v); return isFinite(v) ? v : d; }
+  function clamp(v, a, b) { return Math.min(b, Math.max(a, v)); }
+  function scriptUrl() { return (typeof SCRIPT_URL !== 'undefined') ? SCRIPT_URL : ''; }
+  function fmt(sec) {
+    sec = Math.max(0, Math.round(sec));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* ---------- ผู้ใช้ที่ล็อกอิน (ลำดับเดียวกับ updateUIState ใน index) ---------- */
+  function getSession() {
+    try {
+      var t = sessionStorage.getItem('loggedInTeacher') || localStorage.getItem('savedTeacherProfile');
+      if (t) {
+        var u = JSON.parse(t);
+        return {
+          role: 'teacher',
+          name: u.fullName || u.name || 'ครูผู้สอน',
+          key: String(u.email || u.fullName || 'teacher').toLowerCase(),
+          institution: u.institution || ''
+        };
+      }
+      var s = sessionStorage.getItem('loggedInUser') || localStorage.getItem('savedUserProfile');
+      if (s) {
+        var d = JSON.parse(s);
+        return {
+          role: 'student',
+          name: d.fullName || d.name || 'นักเรียน',
+          key: String(d.email || d.studentCode || d.userCode || d.fullName || 'student').toLowerCase(),
+          institution: d.institution || ''
+        };
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  /* ---------- ความคืบหน้า (เก็บในเครื่องผู้ใช้ แยกตามบัญชี) ---------- */
+  function pkey() { return 'guideProgress_' + S.sess.key; }
+  function loadProg() { try { return JSON.parse(localStorage.getItem(pkey()) || '{}') || {}; } catch (e) { return {}; } }
+  function saveProg() { try { localStorage.setItem(pkey(), JSON.stringify(S.prog)); } catch (e) {} S.dirty = 0; }
+  function entry(gid) {
+    if (!S.prog[gid]) S.prog[gid] = { done: {}, elapsed: {} };
+    if (!S.prog[gid].done) S.prog[gid].done = {};
+    if (!S.prog[gid].elapsed) S.prog[gid].elapsed = {};
+    if (!S.prog[gid].vf) S.prog[gid].vf = {};        // คลิปที่ระบบ "ตรวจจับได้จริง" ว่าดูจนจบ
+    if (!S.prog[gid].maxT) S.prog[gid].maxT = {};    // ตำแหน่งไกลสุดที่ดูต่อเนื่องจริง (วินาที)
+    return S.prog[gid];
+  }
+  /* ประเภทคลิป: yt / video = ตรวจจับการดูจบจริงได้, iframe (เช่น Google Drive) = ตรวจไม่ได้ */
+  function kindOf(u) {
+    u = String(u || '').trim();
+    var m = u.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([\w-]{11})/i);
+    if (m) return { k: 'yt', id: m[1] };
+    if (/^https?:\/\/[^?#]+\.(mp4|webm|ogg|ogv|m4v|mov)(\?|#|$)/i.test(u)) return { k: 'video' };
+    return { k: 'iframe' };
+  }
+  function verifiable(v) { return kindOf(v.url).k !== 'iframe'; }
+  function isDone(g, v) {
+    var e = entry(g.id);
+    if (!e.done[v.url]) return false;
+    return verifiable(v) ? !!e.vf[v.url] : true;     // คลิปที่ตรวจได้ ต้องมีตราว่าดูจบจริง (ล้างผ่านเท็จจากระบบเก่า)
+  }
+  function doneCount(g) { var n = 0; g.videos.forEach(function (v) { if (isDone(g, v)) n++; }); return n; }
+  function complete(g) { return g.videos.length > 0 && doneCount(g) === g.videos.length; }
+  function unlocked(g, i) { for (var k = 0; k < i; k++) { if (!isDone(g, g.videos[k])) return false; } return true; }
+  function firstUndone(g) { for (var k = 0; k < g.videos.length; k++) { if (!isDone(g, g.videos[k])) return k; } return 0; }
+
+  /* ---------- ลิงก์ Google Drive -> ลิงก์ฝัง (พยายามให้เล่นทันที) ---------- */
+  function embedUrl(u) {
+    u = String(u || '').trim();
+    if (!/^https?:\/\//i.test(u)) return '';
+    var m = u.match(/\/d\/([\w-]+)/) || u.match(/[?&]id=([\w-]+)/);
+    if (m) return 'https://drive.google.com/file/d/' + m[1] + '/preview?autoplay=1';
+    return u;
+  }
+
+  /* ---------- สร้าง DOM + CSS ครั้งเดียว ---------- */
+  function ensureDom() {
+    if ($('gdOverlay')) return;
+    var st = document.createElement('style');
+    st.id = 'gdStyle';
+    st.textContent = [
+      '#gdOverlay{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center;background:rgba(5,11,26,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);padding:2vh 2vw;font-family:Prompt,sans-serif}',
+      '#gdOverlay.open{display:flex}',
+      '.gd-modal{width:min(1240px,100%);height:min(94vh,100%);background:#0F172A;color:#f1f5f9;border:1px solid rgba(250,204,21,.45);border-radius:24px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 30px 80px -20px rgba(0,0,0,.7);position:relative}',
+      '.gd-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;background:linear-gradient(135deg,#050B1A,#0B132B 55%,#3A506B);border-bottom:4px solid #FACC15}',
+      '.gd-head h2{margin:0;font-size:18px;font-weight:700;color:#fff}',
+      '.gd-head p{margin:2px 0 0;font-size:12px;color:#FCD34D}',
+      '.gd-x{border:0;background:rgba(255,255,255,.1);color:#fff;width:40px;height:40px;border-radius:12px;font-size:18px;cursor:pointer}',
+      '.gd-x:hover{background:rgba(255,255,255,.2)}',
+      '.gd-body{flex:1;overflow-y:auto;padding:20px;background:#0B132B}',
+      '.gd-empty{text-align:center;color:#94a3b8;padding:60px 10px;font-size:14px}',
+      '.gd-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-left:5px solid #FACC15;border-radius:20px;padding:18px;margin-bottom:16px}',
+      '.gd-card h3{margin:0 0 4px;font-size:17px;color:#fff}',
+      '.gd-date{font-size:11px;color:#94a3b8}',
+      '.gd-text{white-space:pre-line;font-size:13px;color:#cbd5e1;line-height:1.7;margin:10px 0;background:rgba(5,11,26,.6);border-radius:14px;padding:10px 12px}',
+      '.gd-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin:10px 0 6px}',
+      '.gd-bar i{display:block;height:100%;background:linear-gradient(90deg,#FACC15,#EAB308);border-radius:99px;transition:width .3s}',
+      '.gd-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}',
+      '.gd-small{font-size:12px;color:#94a3b8}',
+      '.gd-btn{border:0;cursor:pointer;font-family:inherit;font-weight:600;font-size:13px;padding:10px 18px;border-radius:99px;background:linear-gradient(135deg,#FACC15,#EAB308);color:#0B132B}',
+      '.gd-btn:hover:not(:disabled){filter:brightness(1.07)}',
+      '.gd-btn:disabled{opacity:.45;cursor:not-allowed}',
+      '.gd-btn.alt{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.25)}',
+      '.gd-btn.green{background:linear-gradient(135deg,#34d399,#10b981);color:#052e22}',
+      '.gd-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:4px}',
+      '.gd-link{border:0;background:none;color:#FCD34D;cursor:pointer;font-family:inherit;font-size:13px;padding:0 0 10px}',
+      '.gd-player{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px}',
+      '.gd-frame{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.12)}',
+      '.gd-frame iframe,.gd-frame video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}',
+      '.gd-note{font-size:12px;color:#fca5a5;margin:0 0 8px;line-height:1.5}',
+      '.gd-warn{display:flex;align-items:center;justify-content:center;height:100%;color:#fca5a5;font-size:13px;padding:20px;text-align:center}',
+      '.gd-clip{font-weight:600;font-size:15px;margin:12px 0 4px;color:#fff}',
+      '.gd-timer{font-size:13px;color:#FCD34D;margin-bottom:10px;min-height:20px}',
+      '.gd-side{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:10px;align-self:start;max-height:70vh;overflow-y:auto}',
+      '.gd-item{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid transparent;background:transparent;color:#e2e8f0;font-family:inherit;font-size:13px;padding:10px;border-radius:12px;cursor:pointer}',
+      '.gd-item:hover{background:rgba(255,255,255,.06)}',
+      '.gd-item.cur{background:rgba(250,204,21,.12);border-color:rgba(250,204,21,.45)}',
+      '.gd-item.lock{opacity:.45;cursor:not-allowed}',
+      '.gd-ic{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);font-size:12px}',
+      '.gd-item.ok .gd-ic{background:#10b981;color:#052e22}',
+      '.gd-cert{text-align:center}',
+      '.gd-cert canvas{width:100%;max-width:980px;height:auto;border-radius:12px;box-shadow:0 20px 50px -15px rgba(0,0,0,.6);background:#fff}',
+      '.gd-toast{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);background:#fef3c7;color:#78350f;padding:10px 18px;border-radius:99px;font-size:13px;font-weight:600;display:none;z-index:5;max-width:90%;text-align:center}',
+      '@media (max-width:900px){.gd-player{grid-template-columns:1fr}.gd-side{max-height:none}#gdOverlay{padding:0}.gd-modal{border-radius:0;height:100%}}'
+    ].join('\n');
+    document.head.appendChild(st);
+
+    var ov = document.createElement('div');
+    ov.id = 'gdOverlay';
+    ov.innerHTML =
+      '<div class="gd-modal" role="dialog" aria-modal="true">' +
+        '<div class="gd-head"><div><h2 id="gdTitle">คู่มือการใช้งาน</h2><p id="gdSub"></p></div>' +
+        '<button type="button" class="gd-x" id="gdClose" title="ปิด">&#10005;</button></div>' +
+        '<div class="gd-body" id="gdBody"></div>' +
+        '<div class="gd-toast" id="gdToast"></div>' +
+      '</div>';
+    document.body.appendChild(ov);
+
+    $('gdClose').addEventListener('click', closeModal);
+    $('gdBody').addEventListener('click', onBodyClick);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && $('gdOverlay').classList.contains('open')) closeModal(); });
+    document.addEventListener('visibilitychange', function () { if (S.view === 'player') updateTimerUI(); });
+    window.addEventListener('beforeunload', function () { if (S.sess) saveProg(); });
+  }
+
+  function toast(msg) {
+    var t = $('gdToast'); if (!t) return;
+    t.textContent = msg; t.style.display = 'block';
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { t.style.display = 'none'; }, 2800);
+  }
+  function setHead(title, sub) { $('gdTitle').textContent = title; $('gdSub').textContent = sub || ''; }
+
+  /* ---------- เปิด / ปิด ---------- */
+  window.openGuideModal = function () {
+    var sess = getSession();
+    if (!sess) { alert('กรุณาเข้าสู่ระบบก่อนใช้งานคู่มือ'); return; }
+    S.sess = sess; S.prog = loadProg();
+    ensureDom();
+    try { if (typeof closeSidebar === 'function') closeSidebar(); } catch (e) {}
+    try { S.guides = JSON.parse(localStorage.getItem('guideCache_' + sess.role) || '[]') || []; } catch (e) { S.guides = []; }
+    S.view = 'list'; S.guide = null;
+    $('gdOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    render();
+    startTimer();
+    refresh();
+  };
+
+  function closeModal() {
+    saveProg(); stopTimer(); disposePlayer();
+    drawToken++;
+    S.view = 'list'; S.guide = null;
+    $('gdBody').innerHTML = '';             // เคลียร์ iframe เพื่อหยุดวิดีโอ
+    $('gdOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  /* ---------- โหลดโพสต์จาก Google Sheet ---------- */
+  function normalizeCert(c) {
+    if (!c || !c.imageUrl) return null;
+    return {
+      imageUrl: String(c.imageUrl),
+      x: clamp(num(c.x, 0.5), 0, 1),
+      y: clamp(num(c.y, 0.5), 0, 1),
+      size: clamp(num(c.size, 7), 1, 30),
+      color: /^#[0-9a-fA-F]{6}$/.test(String(c.color || '')) ? String(c.color) : '#0B132B'
+    };
+  }
+
+  function normalizeGuides(list, role) {
+    var out = [];
+    (list || []).forEach(function (g) {
+      if (!g || !g.id) return;
+      if (g.role && g.role !== role) return;
+      var vids = [];
+      (g.videos || []).forEach(function (v) {
+        if (v && v.url) vids.push({ title: String(v.title || ''), url: String(v.url), seconds: Math.max(10, Number(v.seconds) || 60) });
+      });
+      out.push({
+        id: String(g.id), title: String(g.title || ''), content: String(g.content || ''),
+        date: String(g.date || ''), role: g.role, videos: vids, cert: normalizeCert(g.cert)
+      });
+    });
+    return out;
+  }
+
+  function refresh() {
+    var url = scriptUrl();
+    if (!url) return;
+    var role = S.sess.role;
+    S.loading = S.guides.length === 0;
+    if (S.view === 'list') render();
+    fetch(url + '?action=get_guides&role=' + encodeURIComponent(role))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        S.loading = false;
+        if (j && j.status === 'success' && Array.isArray(j.guides)) {
+          S.guides = normalizeGuides(j.guides, role);
+          try { localStorage.setItem('guideCache_' + role, JSON.stringify(S.guides)); } catch (e) {}
+        }
+        if (S.view === 'list' && $('gdOverlay').classList.contains('open')) render();
+      })
+      .catch(function (err) {
+        S.loading = false;
+        console.error('โหลดคู่มือไม่สำเร็จ:', err);
+        if (S.view === 'list' && $('gdOverlay').classList.contains('open')) render();
+      });
+  }
+
+  /* ---------- ตัวนับเวลา ---------- */
+  function startTimer() { stopTimer(); S.timer = setInterval(tick, 1000); }
+  function stopTimer() { if (S.timer) { clearInterval(S.timer); S.timer = null; } }
+  function tick() {
+    if (S.view !== 'player' || !S.guide) return;
+    var v = S.guide.videos[S.idx]; if (!v) return;
+    if (verifiable(v)) { updateTimerUI(); return; }   // คลิปที่ตรวจได้: ไม่ใช้ตัวนับเวลาตัดสิน
+    if (document.hidden) return;
+    var e = entry(S.guide.id);
+    if (e.done[v.url]) return;
+    e.elapsed[v.url] = (e.elapsed[v.url] || 0) + 1;
+    S.dirty++;
+    if (S.dirty >= 5) saveProg();
+    updateTimerUI();
+  }
+
+  /* ---------- ตัวเล่นคลิป: ติ๊กผ่านเมื่อ "เล่นจนจบจริง" เท่านั้น ---------- */
+  var P = null;          // ตัวเล่นปัจจุบัน {kind, maxT, dur, ended, poll, yt, el}
+  var ytReady = null;
+  var SKIP_TOL = 2.5;    // วินาที: ขยับเกินกว่านี้ถือว่ากรอข้าม
+  var END_TOL = 3;       // วินาที: ต้องดูถึงใกล้ท้ายคลิปไม่เกินค่านี้
+
+  function disposePlayer() {
+    if (!P) return;
+    if (P.poll) clearInterval(P.poll);
+    try { if (P.yt && P.yt.destroy) P.yt.destroy(); } catch (e) {}
+    try { if (P.el) { P.el.pause(); P.el.removeAttribute('src'); P.el.load(); } } catch (e) {}
+    P = null;
+  }
+
+  function loadYT() {
+    if (ytReady) return ytReady;
+    ytReady = new Promise(function (resolve, reject) {
+      if (window.YT && window.YT.Player) { resolve(); return; }
+      var prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () { if (prev) try { prev(); } catch (e) {} resolve(); };
+      var sc = document.createElement('script');
+      sc.src = 'https://www.youtube.com/iframe_api';
+      sc.onerror = function () { ytReady = null; reject(new Error('yt')); };
+      document.head.appendChild(sc);
+      setTimeout(function () { if (!(window.YT && window.YT.Player)) { ytReady = null; reject(new Error('timeout')); } }, 15000);
+    });
+    return ytReady;
+  }
+
+  // ตำแหน่งที่ดูต่อเนื่องจริง: ขยับไปข้างหน้าได้เฉพาะตอนเล่นปกติ
+  function advance(t, e, v, seekBack) {
+    if (!P) return;
+    if (t > P.maxT + SKIP_TOL) { seekBack(P.maxT); P.warnSkip = true; updateTimerUI(); return; }
+    if (t > P.maxT) {
+      P.maxT = t;
+      e.maxT[v.url] = Math.floor(t);
+      S.dirty++; if (S.dirty >= 10) saveProg();
+    }
+  }
+
+  function reachedEnd() { return P && P.dur > 0 && P.maxT >= P.dur - END_TOL; }
+
+  function markVerifiedDone(g, v) {
+    var e = entry(g.id);
+    if (e.done[v.url] && e.vf[v.url]) return;
+    e.done[v.url] = true; e.vf[v.url] = true; saveProg();
+    if (complete(g) && !e.certAt) { e.certAt = Date.now(); saveProg(); }
+    refreshPlaylist();
+    updateTimerUI();
+  }
+
+  function mountPlayer(g, v, box) {
+    var kd = kindOf(v.url), e = entry(g.id);
+    P = { kind: kd.k, maxT: Math.max(0, e.maxT[v.url] || 0), dur: 0, ended: false, poll: null, yt: null, el: null, warnSkip: false };
+    var mine = P;
+    function alive() { return P === mine && S.view === 'player' && S.guide === g && g.videos[S.idx] === v; }
+
+    if (kd.k === 'video') {
+      var el = document.createElement('video');
+      el.src = v.url; el.controls = true; el.playsInline = true; el.preload = 'metadata';
+      el.setAttribute('controlsList', 'nodownload noplaybackrate');
+      el.setAttribute('disablePictureInPicture', '');
+      el.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+      box.appendChild(el); mine.el = el;
+      el.addEventListener('loadedmetadata', function () { mine.dur = el.duration || 0; updateTimerUI(); });
+      el.addEventListener('timeupdate', function () {
+        if (!alive() || el.seeking) return;
+        advance(el.currentTime, e, v, function (to) { el.currentTime = to; });
+      });
+      el.addEventListener('seeking', function () {
+        if (!alive()) return;
+        if (el.currentTime > mine.maxT + SKIP_TOL) { el.currentTime = mine.maxT; mine.warnSkip = true; updateTimerUI(); }
+      });
+      el.addEventListener('ratechange', function () { if (el.playbackRate > 2) el.playbackRate = 1; });
+      el.addEventListener('ended', function () {
+        if (!alive()) return;
+        mine.dur = el.duration || mine.dur;
+        if (reachedEnd()) { mine.ended = true; markVerifiedDone(g, v); }
+        else { el.currentTime = mine.maxT; updateTimerUI(); }
+      });
+      el.addEventListener('error', function () {
+        if (!alive()) return;
+        box.innerHTML = '<div class="gd-warn">เปิดไฟล์วิดีโอไม่ได้ (ลิงก์เสียหรือไม่อนุญาตให้เล่น) กรุณาแจ้งผู้ดูแลระบบ</div>';
+      });
+      return;
+    }
+
+    // YouTube
+    var holder = document.createElement('div'); box.appendChild(holder);
+    loadYT().then(function () {
+      if (!alive()) return;
+      mine.yt = new YT.Player(holder, {
+        videoId: kd.id,
+        width: '100%', height: '100%',
+        playerVars: { rel: 0, modestbranding: 1, playsinline: 1, disablekb: 1, fs: 1 },
+        events: {
+          onReady: function () {
+            try { mine.dur = mine.yt.getDuration() || 0; } catch (x) {}
+            var f = box.querySelector('iframe'); if (f) { f.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0'; }
+            updateTimerUI();
+          },
+          onStateChange: function (ev) {
+            if (!alive()) return;
+            try { mine.dur = mine.yt.getDuration() || mine.dur; } catch (x) {}
+            if (ev.data === YT.PlayerState.ENDED) {
+              if (reachedEnd()) { mine.ended = true; markVerifiedDone(g, v); }
+              else { try { mine.yt.seekTo(mine.maxT, true); mine.yt.pauseVideo(); } catch (x) {} mine.warnSkip = true; updateTimerUI(); }
+            }
+          }
+        }
+      });
+      mine.poll = setInterval(function () {
+        if (!alive() || !mine.yt || !mine.yt.getPlayerState) return;
+        var st; try { st = mine.yt.getPlayerState(); } catch (x) { return; }
+        if (st !== YT.PlayerState.PLAYING && st !== YT.PlayerState.BUFFERING) return;
+        var t; try { t = mine.yt.getCurrentTime(); } catch (x) { return; }
+        advance(t, e, v, function (to) { mine.yt.seekTo(to, true); });
+      }, 500);
+    }).catch(function () {
+      if (!alive()) return;
+      box.innerHTML = '<div class="gd-warn">โหลดตัวเล่น YouTube ไม่ได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่</div>';
+    });
+  }
+
+  /* ---------- วาดหน้าจอ ---------- */
+  function render() {
+    if (S.view === 'player') renderPlayer();
+    else if (S.view === 'cert') renderCert();
+    else renderList();
+  }
+
+  function renderList() {
+    disposePlayer();
+    S.view = 'list';
+    setHead('คู่มือการใช้งาน', S.sess.role === 'teacher' ? 'สำหรับครู / บุคลากร — ดูคลิปให้ครบเพื่อรับเกียรติบัตร' : 'สำหรับนักเรียน — ดูคลิปให้ครบเพื่อรับเกียรติบัตร');
+    var body = $('gdBody');
+    if (S.loading) { body.innerHTML = '<div class="gd-empty">กำลังโหลดคู่มือ...</div>'; return; }
+    if (!S.guides.length) { body.innerHTML = '<div class="gd-empty">ยังไม่มีคู่มือการใช้งานในขณะนี้</div>'; return; }
+
+    body.innerHTML = S.guides.map(function (g) {
+      var total = g.videos.length, d = doneCount(g);
+      var pct = total ? Math.round(d * 100 / total) : 0;
+      var fin = complete(g);
+      var action = fin
+        ? '<button class="gd-btn green" data-act="cert" data-id="' + esc(g.id) + '">🎓 ดูเกียรติบัตร</button> <button class="gd-btn alt" data-act="open" data-id="' + esc(g.id) + '">ดูคลิปอีกครั้ง</button>'
+        : (total ? '<button class="gd-btn" data-act="open" data-id="' + esc(g.id) + '">' + (d > 0 ? 'เรียนต่อ' : 'เริ่มดูคลิป') + '</button>' : '<span class="gd-small">โพสต์นี้ยังไม่มีคลิป</span>');
+      return '<div class="gd-card">' +
+        '<h3>' + esc(g.title) + '</h3>' +
+        '<div class="gd-date">' + esc(g.date) + '</div>' +
+        (g.content ? '<div class="gd-text">' + esc(g.content) + '</div>' : '') +
+        '<div class="gd-bar"><i style="width:' + pct + '%"></i></div>' +
+        '<div class="gd-row"><span class="gd-small">ดูแล้ว ' + d + '/' + total + ' คลิป' + (fin ? ' — ครบแล้ว ✓' : '') + '</span><span>' + action + '</span></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function playlistHtml(g) {
+    return g.videos.map(function (x, i) {
+      var ok = isDone(g, x), open = unlocked(g, i);
+      var cls = 'gd-item' + (i === S.idx ? ' cur' : '') + (ok ? ' ok' : '') + (!open ? ' lock' : '');
+      var icon = ok ? '&#10003;' : (open ? (i + 1) : '&#128274;');
+      return '<button type="button" class="' + cls + '" data-act="clip" data-i="' + i + '">' +
+        '<span class="gd-ic">' + icon + '</span><span>' + esc(x.title || ('คลิปที่ ' + (i + 1))) + '<br><span class="gd-small">' + (verifiable(x) ? 'ต้องดูจนจบคลิป' : 'ต้องดูอย่างน้อย ' + fmt(x.seconds) + ' นาที') + '</span></span></button>';
+    }).join('');
+  }
+
+  function refreshPlaylist() {
+    var s = $('gdSide');
+    if (s && S.guide) s.innerHTML = playlistHtml(S.guide);
+  }
+
+  function renderPlayer() {
+    S.view = 'player';
+    var g = S.guide; if (!g) { renderList(); return; }
+    var v = g.videos[S.idx]; if (!v) { renderList(); return; }
+    setHead(g.title, 'คลิปที่ ' + (S.idx + 1) + ' จาก ' + g.videos.length);
+    disposePlayer();
+    var vf = verifiable(v);
+    var src = vf ? '' : embedUrl(v.url);
+    var frame = vf ? '' : (src
+      ? '<iframe src="' + esc(src) + '" allow="autoplay; fullscreen; encrypted-media" allowfullscreen></iframe>'
+      : '<div class="gd-warn">ลิงก์วิดีโอไม่ถูกต้อง กรุณาแจ้งผู้ดูแลระบบ</div>');
+
+    $('gdBody').innerHTML =
+      '<button type="button" class="gd-link" data-act="back">&larr; กลับไปรายการคู่มือ</button>' +
+      '<div class="gd-player">' +
+        '<div><div class="gd-frame">' + frame + '</div>' +
+          '<div class="gd-clip">' + esc(v.title || ('คลิปที่ ' + (S.idx + 1))) + '</div>' +
+          '<div class="gd-timer" id="gdTimer"></div>' +
+          '<div class="gd-actions">' +
+            '<button type="button" class="gd-btn" id="gdDoneBtn" data-act="finish"></button>' +
+            '<button type="button" class="gd-btn alt" data-act="stop">พอแค่นี้ (ดูต่อภายหลัง)</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="gd-side" id="gdSide">' + playlistHtml(g) + '</div>' +
+      '</div>';
+    if (vf) mountPlayer(g, v, document.querySelector('#gdBody .gd-frame'));
+    updateTimerUI();
+  }
+
+  function updateTimerUI() {
+    var btn = $('gdDoneBtn'), info = $('gdTimer');
+    if (!btn || !info || !S.guide) return;
+    var g = S.guide, v = g.videos[S.idx]; if (!v) return;
+    var e = entry(g.id), last = S.idx >= g.videos.length - 1;
+    if (isDone(g, v)) {
+      info.textContent = last ? 'คุณดูคลิปสุดท้ายจบแล้ว ✓' : 'คุณดูคลิปนี้จบแล้ว ✓ — ไปคลิปถัดไป หรือพอแค่นี้ก็ได้';
+      btn.disabled = false;
+      btn.textContent = last ? '🎓 รับเกียรติบัตร' : 'ไปคลิปถัดไป →';
+      return;
+    }
+    if (verifiable(v)) {
+      var cur = P ? Math.floor(P.maxT) : 0, dur = P ? Math.floor(P.dur) : 0;
+      info.textContent = 'ต้องดูคลิปจนจบจริงจึงจะผ่าน (กรอข้ามไม่ได้)' + (dur ? ' — ดูต่อเนื่องแล้ว ' + fmt(cur) + ' / ' + fmt(dur) : '') +
+        (P && P.warnSkip ? ' — ตรวจพบการกรอข้าม ระบบย้อนกลับให้แล้ว' : '');
+      btn.disabled = true;
+      btn.textContent = 'ยังดูไม่จบ';
+      return;
+    }
+    var left = Math.max(0, v.seconds - (e.elapsed[v.url] || 0));
+    if (left > 0) {
+      info.textContent = 'คลิปนี้เป็นลิงก์ที่ระบบตรวจจับการเล่นไม่ได้ จึงนับเวลาเต็มความยาวคลิป โปรดดูให้จบ — เหลืออีก ' + fmt(left) + (document.hidden ? ' (หยุดนับชั่วคราว: ไม่ได้อยู่หน้านี้)' : '');
+      btn.disabled = true;
+      btn.textContent = 'ดูจบแล้ว (รออีก ' + fmt(left) + ')';
+    } else {
+      info.textContent = 'ครบเวลาแล้ว กดปุ่มเพื่อยืนยันว่าดูจบ';
+      btn.disabled = false;
+      btn.textContent = '✔ ดูจบแล้ว';
+    }
+  }
+
+  function finishCurrent() {
+    var g = S.guide; if (!g) return;
+    var v = g.videos[S.idx]; if (!v) return;
+    var e = entry(g.id), last = S.idx >= g.videos.length - 1;
+
+    if (!isDone(g, v)) {
+      if (verifiable(v)) { toast('ต้องดูคลิปจนจบก่อน'); return; }
+      if ((e.elapsed[v.url] || 0) < v.seconds) { toast('ยังดูไม่ครบเวลาที่กำหนด'); return; }
+      e.done[v.url] = true; saveProg();
+      if (complete(g)) {                       // ครบทุกคลิป -> ไปเกียรติบัตรเลย
+        if (!e.certAt) { e.certAt = Date.now(); saveProg(); }
+        renderCert();
+        return;
+      }
+      refreshPlaylist();                       // ยังไม่ครบ: อยู่หน้าเดิม ให้เลือก "ถัดไป" หรือ "พอแค่นี้"
+      updateTimerUI();
+      return;
+    }
+
+    // คลิปนี้ดูจบแล้ว: กด "ไปคลิปถัดไป" / "รับเกียรติบัตร"
+    if (last) {
+      if (complete(g)) { renderCert(); }
+      else { S.idx = firstUndone(g); renderPlayer(); toast('ยังมีคลิปที่ดูไม่ครบ'); }
+      return;
+    }
+    S.idx++;
+    renderPlayer();
+  }
+
+  /* ---------- เกียรติบัตร ---------- */
+  function renderCert() {
+    disposePlayer();
+    S.view = 'cert';
+    var g = S.guide; if (!g) { renderList(); return; }
+    setHead('เกียรติบัตร', g.title);
+    $('gdBody').innerHTML =
+      '<button type="button" class="gd-link" data-act="back">&larr; กลับไปรายการคู่มือ</button>' +
+      '<div class="gd-cert"><canvas id="gdCanvas" width="800" height="566"></canvas>' +
+      '<div class="gd-small" id="gdCertNote" style="margin-top:8px"></div>' +
+      '<div style="margin-top:12px"><button type="button" class="gd-btn" data-act="download">⬇ ดาวน์โหลดเกียรติบัตร (PNG)</button></div>' +
+      '<div class="gd-small" style="margin-top:8px">ชื่อบนเกียรติบัตร: ' + esc(S.sess.name) + '</div></div>';
+    drawCert();
+  }
+
+  function fitText(ctx, text, font, maxW, size, weight) {
+    while (size > 12) {
+      ctx.font = weight + ' ' + size + 'px ' + font;
+      if (ctx.measureText(text).width <= maxW) break;
+      size -= 2;
+    }
+    ctx.font = weight + ' ' + size + 'px ' + font;
+    return size;
+  }
+
+  function fontsReady() {
+    var p = [];
+    try { p = [document.fonts.load('700 64px Prompt'), document.fonts.load('400 32px Prompt')]; } catch (x) {}
+    return Promise.all(p).catch(function () {});
+  }
+
+  function loadCertImage(url) {
+    if (certImgCache[url]) return Promise.resolve(certImgCache[url]);
+    var base = scriptUrl();
+    if (!base) return Promise.reject(new Error('no script url'));
+    return fetch(base + '?action=get_cert_image&url=' + encodeURIComponent(url))
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.status === 'success' && j.dataUrl) { certImgCache[url] = j.dataUrl; return j.dataUrl; }
+        throw new Error((j && j.message) || 'load fail');
+      });
+  }
+
+  function imgFromData(d) {
+    return new Promise(function (res, rej) {
+      var im = new Image();
+      im.onload = function () { res(im); };
+      im.onerror = function () { rej(new Error('image error')); };
+      im.src = d;
+    });
+  }
+
+  function setCertNote(t) { var n = $('gdCertNote'); if (n) n.textContent = t || ''; }
+
+  function drawCert() {
+    var g = S.guide; if (!g || !$('gdCanvas')) return;
+    var tok = ++drawToken;
+    var stillHere = function () { return tok === drawToken && S.view === 'cert' && $('gdCanvas'); };
+
+    if (g.cert && g.cert.imageUrl) {
+      setCertNote('กำลังโหลดเกียรติบัตร...');
+      Promise.all([loadCertImage(g.cert.imageUrl).then(imgFromData), fontsReady()])
+        .then(function (r) {
+          if (!stillHere()) return;
+          drawTemplate(r[0], g.cert);
+          setCertNote('');
+        })
+        .catch(function (err) {
+          console.error('โหลดรูปเกียรติบัตรไม่สำเร็จ:', err);
+          if (!stillHere()) return;
+          fontsReady().then(function () {
+            if (!stillHere()) return;
+            drawDefault(g);
+            setCertNote('โหลดรูปเกียรติบัตรของระบบไม่สำเร็จ จึงใช้แบบมาตรฐานแทน');
+          });
+        });
+    } else {
+      fontsReady().then(function () { if (stillHere()) drawDefault(g); });
+    }
+  }
+
+  /* เกียรติบัตรจากรูปที่แอดมินอัปโหลด: ใส่เฉพาะชื่อผู้ใช้ตามตำแหน่งที่กำหนด */
+  function drawTemplate(im, cert) {
+    var cv = $('gdCanvas'); if (!cv) return;
+    var scale = Math.min(1, 2400 / im.naturalWidth);
+    var W = Math.round(im.naturalWidth * scale), H = Math.round(im.naturalHeight * scale);
+    cv.width = W; cv.height = H;
+    var x = cv.getContext('2d'), F = 'Prompt, Kanit, sans-serif';
+    x.drawImage(im, 0, 0, W, H);
+    var name = S.sess.name || '';
+    var size = fitText(x, name, F, W * 0.84, Math.round(cert.size / 100 * H), 700);
+    x.fillStyle = cert.color;
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '700 ' + size + 'px ' + F;
+    x.fillText(name, cert.x * W, cert.y * H);
+  }
+
+  /* เกียรติบัตรแบบมาตรฐาน (ใช้เมื่อแอดมินไม่ได้ใส่รูป) */
+  function drawDefault(g) {
+    var cv = $('gdCanvas'); if (!cv) return;
+    var e = entry(g.id);
+    var W = 1600, H = 1131;
+    cv.width = W; cv.height = H;
+    var x = cv.getContext('2d'), F = 'Prompt, Kanit, sans-serif';
+    var bg = x.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#FFFDF5'); bg.addColorStop(1, '#FFF7DB');
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    x.strokeStyle = '#0B132B'; x.lineWidth = 16; x.strokeRect(30, 30, W - 60, H - 60);
+    x.strokeStyle = '#EAB308'; x.lineWidth = 5; x.strokeRect(58, 58, W - 116, H - 116);
+    x.textAlign = 'center'; x.textBaseline = 'alphabetic';
+
+    var inst = S.sess.institution || 'วิทยาลัยอาชีวศึกษาชุมพร';
+    x.fillStyle = '#334155'; x.font = '500 38px ' + F; x.fillText(inst, W / 2, 175);
+    x.fillStyle = '#0B132B'; x.font = '700 130px ' + F; x.fillText('เกียรติบัตร', W / 2, 330);
+    x.fillStyle = '#B7791F'; x.font = '500 30px ' + F; x.fillText('C E R T I F I C A T E   O F   C O M P L E T I O N', W / 2, 390);
+    x.fillStyle = '#334155'; x.font = '400 38px ' + F; x.fillText('ขอมอบเกียรติบัตรฉบับนี้ให้ไว้เพื่อแสดงว่า', W / 2, 500);
+
+    var name = S.sess.name || '';
+    var ns = fitText(x, name, F, 1250, 110, 700);
+    x.fillStyle = '#0B132B'; x.font = '700 ' + ns + 'px ' + F; x.fillText(name, W / 2, 640);
+    x.strokeStyle = '#EAB308'; x.lineWidth = 3;
+    x.beginPath(); x.moveTo(W / 2 - 480, 665); x.lineTo(W / 2 + 480, 665); x.stroke();
+
+    x.fillStyle = '#334155'; x.font = '400 36px ' + F;
+    x.fillText('ได้ศึกษาและรับชมคู่มือการใช้งานครบทุกคลิปเรียบร้อยแล้ว', W / 2, 745);
+    var t = 'เรื่อง ' + g.title;
+    var ts = fitText(x, t, F, 1300, 46, 600);
+    x.fillStyle = '#0B132B'; x.font = '600 ' + ts + 'px ' + F; x.fillText(t, W / 2, 820);
+
+    var d = new Date(e.certAt || Date.now());
+    var ds = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' });
+    x.fillStyle = '#334155'; x.font = '400 34px ' + F; x.fillText('ให้ไว้ ณ วันที่ ' + ds, W / 2, 925);
+    x.fillStyle = '#B7791F'; x.font = '500 30px ' + F;
+    x.fillText('แพลตฟอร์มส่งงานและสั่งงานออนไลน์ วิทยาลัยอาชีวศึกษาชุมพร', W / 2, 1010);
+  }
+
+  function downloadCert() {
+    var c = $('gdCanvas'); if (!c) return;
+    var fname = 'เกียรติบัตร_' + String(S.sess.name || 'user').replace(/[\\/:*?"<>|]/g, '').trim() + '.png';
+    try {
+      if (c.toBlob) {
+        c.toBlob(function (b) {
+          if (!b) { toast('สร้างไฟล์ไม่สำเร็จ'); return; }
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(b); a.download = fname;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+        }, 'image/png');
+      } else {
+        var a2 = document.createElement('a'); a2.href = c.toDataURL('image/png'); a2.download = fname;
+        document.body.appendChild(a2); a2.click(); a2.remove();
+      }
+    } catch (err) { toast('ดาวน์โหลดไม่สำเร็จ'); }
+  }
+
+  /* ---------- คลิกในหน้าต่าง ---------- */
+  function findGuide(id) { for (var i = 0; i < S.guides.length; i++) { if (S.guides[i].id === id) return S.guides[i]; } return null; }
+
+  function onBodyClick(ev) {
+    var el = ev.target.closest ? ev.target.closest('[data-act]') : null;
+    if (!el) return;
+    var act = el.getAttribute('data-act');
+
+    if (act === 'open') {
+      var g = findGuide(el.getAttribute('data-id'));
+      if (!g || !g.videos.length) return;
+      S.guide = g; S.idx = complete(g) ? 0 : firstUndone(g);
+      renderPlayer();
+    } else if (act === 'cert') {
+      var g2 = findGuide(el.getAttribute('data-id'));
+      if (!g2 || !complete(g2)) return;
+      S.guide = g2;
+      var e2 = entry(g2.id); if (!e2.certAt) { e2.certAt = Date.now(); saveProg(); }
+      renderCert();
+    } else if (act === 'back') {
+      saveProg(); drawToken++; S.guide = null; renderList();
+    } else if (act === 'stop') {
+      saveProg(); S.guide = null; renderList();
+      toast('บันทึกความคืบหน้าแล้ว กลับมาดูต่อได้ภายหลัง');
+    } else if (act === 'clip') {
+      var i = parseInt(el.getAttribute('data-i'), 10);
+      if (isNaN(i) || !S.guide) return;
+      if (!unlocked(S.guide, i)) { toast('กรุณาดูคลิปก่อนหน้าให้จบก่อน'); return; }
+      if (i === S.idx) return;
+      saveProg(); S.idx = i; renderPlayer();
+    } else if (act === 'finish') {
+      var btn = $('gdDoneBtn'); if (btn && btn.disabled) return;
+      finishCurrent();
+    } else if (act === 'download') {
+      downloadCert();
+    }
+  }
+})();
+
+    </script>
+<!-- ===== ประกาศรูปภาพป๊อปอัป (จัดการจากหน้า admin) ===== -->
+<div id="annPopOverlay" role="dialog" aria-modal="true" aria-label="ประกาศ">
+    <div id="annPopBox">
+        <div id="annPopStage">
+            <span id="annPopCount"></span>
+            <button type="button" id="annPopClose" aria-label="ปิดประกาศ">&#10005;</button>
+            <button type="button" id="annPopPrev" class="annPopNav" aria-label="รูปก่อนหน้า">&#10094;</button>
+            <img id="annPopImg" alt="ประกาศ" draggable="false">
+            <button type="button" id="annPopNext" class="annPopNav" aria-label="รูปถัดไป">&#10095;</button>
+        </div>
+        <div id="annPopFoot">
+            <label><input type="checkbox" id="annPopHideToday"> หยุดแสดงเฉพาะวันนี้</label>
+            <div id="annPopDots"></div>
+        </div>
+    </div>
+</div>
+<script>
+(function () {
+  var SU = (typeof SCRIPT_URL !== 'undefined') ? SCRIPT_URL : '';
+  if (!SU) return;
+  var overlay = document.getElementById('annPopOverlay');
+  var imgEl = document.getElementById('annPopImg');
+  var prevB = document.getElementById('annPopPrev'), nextB = document.getElementById('annPopNext');
+  var cntEl = document.getElementById('annPopCount'), dotsEl = document.getElementById('annPopDots');
+  var hideChk = document.getElementById('annPopHideToday');
+  var list = [], idx = 0, target = 'guest';
+
+  function isLoggedIn() {
+    try { return !!(sessionStorage.getItem('loggedInTeacher') || localStorage.getItem('savedTeacherProfile') || sessionStorage.getItem('loggedInUser') || localStorage.getItem('savedUserProfile')); }
+    catch (e) { return false; }
+  }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  }
+  function hideKey() { return 'annPopHide_' + target; }
+  function hiddenToday() { try { return localStorage.getItem(hideKey()) === todayStr(); } catch (e) { return false; } }
+
+  function render() {
+    if (!list.length) return;
+    imgEl.src = list[idx].url;
+    var multi = list.length > 1;
+    prevB.style.display = nextB.style.display = multi ? 'flex' : 'none';
+    cntEl.style.display = multi ? 'block' : 'none';
+    cntEl.textContent = (idx + 1) + ' / ' + list.length;
+    dotsEl.innerHTML = multi && list.length <= 12 ? list.map(function (_, i) { return '<i class="' + (i === idx ? 'on' : '') + '"></i>'; }).join('') : '';
+  }
+  function go(step) { idx = (idx + step + list.length) % list.length; render(); }
+  function close() {
+    if (hideChk.checked) { try { localStorage.setItem(hideKey(), todayStr()); } catch (e) {} }
+    overlay.classList.remove('show');
+    document.removeEventListener('keydown', onKey);
+  }
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+    else if (e.key === 'ArrowLeft' && list.length > 1) go(-1);
+    else if (e.key === 'ArrowRight' && list.length > 1) go(1);
+  }
+  function open() {
+    idx = 0; hideChk.checked = false; render();
+    overlay.classList.add('show');
+    document.addEventListener('keydown', onKey);
+    // โหลดรูปที่เหลือไว้ล่วงหน้า
+    list.slice(1).forEach(function (p) { var im = new Image(); im.src = p.url; });
+  }
+
+  document.getElementById('annPopClose').onclick = close;
+  prevB.onclick = function () { go(-1); };
+  nextB.onclick = function () { go(1); };
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+  // ปัดซ้าย-ขวาบนมือถือ
+  var sx = null, stage = document.getElementById('annPopStage');
+  stage.addEventListener('touchstart', function (e) { sx = e.touches[0].clientX; }, { passive: true });
+  stage.addEventListener('touchend', function (e) {
+    if (sx === null || list.length < 2) return;
+    var dx = e.changedTouches[0].clientX - sx; sx = null;
+    if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  function start() {
+    target = isLoggedIn() ? 'member' : 'guest';
+    if (hiddenToday()) return;
+    var cacheKey = 'annPopCache_' + target;
+    var shown = false;
+    function apply(arr) {
+      if (shown || !arr || !arr.length) return;
+      list = arr; shown = true; open();
+    }
+    // ดึงรายการล่าสุดจากชีต
+    fetch(SU + '?action=get_popups&target=' + target + '&t=' + Date.now())
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var arr = (d && d.status === 'success' && d.popups) ? d.popups.filter(function (p) { return p.target === target; }) : [];
+        try { localStorage.setItem(cacheKey, JSON.stringify(arr)); } catch (e) {}
+        if (!shown) apply(arr);
+        else if (!arr.length) { overlay.classList.remove('show'); }
+      })
+      .catch(function () {
+        try { apply(JSON.parse(localStorage.getItem(cacheKey) || '[]')); } catch (e) {}
+      });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+</script>
+</body>
+</html>
