@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ติดตั้งแอปส่งงาน | วิทยาลัยอาชีวศึกษาชุมพร</title>
+<link rel="icon" type="image/png" href="photo/icon1.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b2f7a">
+<link rel="apple-touch-icon" href="image/og-image.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="ส่งงาน">
+<meta property="og:title" content="ติดตั้งแอปส่งงาน วิทยาลัยอาชีวศึกษาชุมพร">
+<meta property="og:description" content="กดติดตั้งได้ทั้ง Android, iPhone และ Windows">
+<meta property="og:image" content="https://submissionplatformofficial.github.io/versionbetatest2.5/image/og-image.png">
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0B132B;
+    --navy-2: #1C2541;
+    --slate: #3A506B;
+    --gold: #FACC15;
+    --gold-2: #EAB308;
+    --ink: #0F172A;
+    --muted: #64748B;
+    --line: #E2E8F0;
+    --bg: #F8FAFC;
+    --card: #FFFFFF;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ink: #F1F5F9;
+      --muted: #94A3B8;
+      --line: rgba(255,255,255,.12);
+      --bg: #050B1A;
+      --card: #0F1A33;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: 'Prompt', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .top {
+    background: linear-gradient(180deg, #050B1A 0%, var(--navy) 55%, var(--navy-2) 100%);
+    color: #fff;
+    padding: calc(env(safe-area-inset-top, 0px) + 40px) 20px 88px;
+    text-align: center;
+    border-bottom: 4px solid var(--gold);
+  }
+  .app-icon {
+    width: 104px; height: 104px;
+    border-radius: 24px;
+    object-fit: cover;
+    background: #fff;
+    border: 3px solid rgba(250,204,21,.8);
+    box-shadow: 0 18px 40px -14px rgba(0,0,0,.7);
+  }
+  .top h1 { margin: 18px 0 4px; font-size: 26px; font-weight: 700; line-height: 1.3; }
+  .top p { margin: 0 auto; max-width: 420px; color: #CBD5E1; font-size: 14px; }
+
+  main { max-width: 560px; margin: -56px auto 0; padding: 0 16px 40px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 14px;
+    box-shadow: 0 20px 40px -24px rgba(11,19,43,.45);
+  }
+  .card h2 { margin: 0 0 6px; font-size: 17px; font-weight: 600; }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%;
+    margin-top: 16px;
+    padding: 15px 20px;
+    border: 0;
+    border-radius: 999px;
+    font: 600 16px 'Prompt', sans-serif;
+    color: var(--navy);
+    background: linear-gradient(135deg, var(--gold), var(--gold-2));
+    box-shadow: 0 12px 26px -12px rgba(234,179,8,.9);
+    cursor: pointer;
+  }
+  .btn:hover { filter: brightness(1.06); }
+  .btn:focus-visible, .tab:focus-visible, .copy:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); box-shadow: none; }
+
+  .tabs { display: flex; gap: 6px; background: var(--line); padding: 4px; border-radius: 999px; margin-bottom: 16px; }
+  .tab {
+    flex: 1; border: 0; background: transparent; color: var(--muted);
+    font: 500 14px 'Prompt', sans-serif; padding: 9px 6px; border-radius: 999px; cursor: pointer;
+  }
+  .tab[aria-selected="true"] { background: var(--navy); color: #fff; }
+  @media (prefers-color-scheme: dark) { .tab[aria-selected="true"] { background: var(--gold); color: var(--navy); } }
+
+  ol.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; }
+  ol.steps li {
+    counter-increment: s;
+    position: relative;
+    padding: 0 0 14px 44px;
+    font-size: 15px;
+  }
+  ol.steps li::before {
+    content: counter(s);
+    position: absolute; left: 0; top: 0;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--navy); color: var(--gold);
+    font-weight: 600; font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  ol.steps li:last-child { padding-bottom: 0; }
+  .ic {
+    display: inline-block; vertical-align: -4px;
+    width: 20px; height: 20px; margin: 0 2px;
+  }
+  .note {
+    margin-top: 14px; padding: 12px 14px;
+    border-radius: 14px; font-size: 13px;
+    background: rgba(250,204,21,.14); border: 1px solid rgba(234,179,8,.45);
+  }
+  .note.warn { background: rgba(244,63,94,.1); border-color: rgba(244,63,94,.4); }
+  .copy-row { display: flex; gap: 8px; margin-top: 10px; }
+  .copy-row input {
+    flex: 1; min-width: 0; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font: 13px 'Prompt', sans-serif;
+  }
+  .copy {
+    border: 0; border-radius: 12px; padding: 0 16px; cursor: pointer;
+    font: 600 13px 'Prompt', sans-serif; background: var(--navy); color: #fff;
+  }
+  .hidden { display: none !important; }
+  .done-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 999px;
+    background: rgba(16,185,129,.15); color: #059669; font-weight: 600; font-size: 14px;
+  }
+  footer { text-align: center; color: var(--muted); font-size: 12px; padding: 0 16px 28px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .btn { transition: transform .2s ease, filter .2s ease; }
+    .btn:hover { transform: translateY(-2px); }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <img class="app-icon" src="image/og-image.png" alt="ไอคอนแอปส่งงาน">
+  <h1>แพลตฟอร์มส่งงานและสั่งงานออนไลน์</h1>
+  <p>วิทยาลัยอาชีวศึกษาชุมพร ติดตั้งเป็นแอปบนเครื่อง เปิดได้จากหน้าจอหลักเหมือนแอปทั่วไป</p>
+</header>
+
+<main>
+
+  <!-- เปิดผ่านแอปในไลน์/เฟซบุ๊ก: ติดตั้งไม่ได้ ต้องเปิดในเบราว์เซอร์ก่อน -->
+  <section class="card hidden" id="inAppCard">
+    <h2>กรุณาเปิดลิงก์ในเบราว์เซอร์ก่อน</h2>
+    <p>ตอนนี้คุณเปิดหน้านี้ผ่านแอปอื่น (เช่น LINE หรือ Facebook) ซึ่งติดตั้งแอปไม่ได้</p>
+    <ol class="steps" style="margin-top:14px">
+      <li>กดเมนู <b>⋮</b> หรือไอคอนแชร์ มุมขวาบน</li>
+      <li>เลือก <b>เปิดในเบราว์เซอร์</b> (iPhone ใช้ Safari, Android ใช้ Chrome)</li>
+    </ol>
+    <div class="copy-row">
+      <input id="linkBox" type="text" readonly aria-label="ลิงก์หน้านี้">
+      <button class="copy" id="copyBtn" type="button">คัดลอกลิงก์</button>
+    </div>
+  </section>
+
+  <!-- ติดตั้งแล้ว -->
+  <section class="card hidden" id="installedCard" style="text-align:center">
+    <span class="done-badge">✓ ติดตั้งแล้ว</span>
+    <p style="margin-top:12px">คุณกำลังใช้งานแอปนี้อยู่ ถ้าจะเปิดครั้งต่อไป ให้กดไอคอนบนหน้าจอหลักหรือเดสก์ท็อป</p>
+    <a class="btn" href="index.html" style="text-decoration:none">เข้าสู่ระบบ</a>
+  </section>
+
+  <!-- ปุ่มติดตั้ง -->
+  <section class="card" id="installCard">
+    <h2>ติดตั้งแอป</h2>
+    <p id="installHint">กดปุ่มด้านล่างเพื่อติดตั้งลงเครื่องของคุณ ใช้เวลาไม่ถึงครึ่งนาที และไม่ใช้พื้นที่มาก</p>
+
+    <button class="btn" id="installBtn" type="button">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-5-5m5 5l5-5M5 21h14"/></svg>
+      <span id="installBtnText">ติดตั้งแอป</span>
+    </button>
+    <div class="note warn hidden" id="installFail"></div>
+  </section>
+
+  <!-- วิธีติดตั้งแบบกดเอง -->
+  <section class="card" id="guideCard">
+    <h2>วิธีติดตั้งตามอุปกรณ์</h2>
+    <p style="margin-bottom:14px">ถ้ากดปุ่มด้านบนแล้วไม่มีอะไรเกิดขึ้น ทำตามขั้นตอนของเครื่องคุณได้เลย</p>
+
+    <div class="tabs" role="tablist" aria-label="เลือกอุปกรณ์">
+      <button class="tab" role="tab" id="tab-android" data-t="android" aria-selected="false">Android</button>
+      <button class="tab" role="tab" id="tab-ios" data-t="ios" aria-selected="false">iPhone / iPad</button>
+      <button class="tab" role="tab" id="tab-windows" data-t="windows" aria-selected="false">Windows</button>
+    </div>
+
+    <div id="panel-android" role="tabpanel" class="hidden">
+      <ol class="steps">
+        <li>เปิดลิงก์นี้ด้วย <b>Chrome</b></li>
+        <li>กดเมนู <b>⋮</b> มุมขวาบน</li>
+        <li>เลือก <b>ติดตั้งแอป</b> (หรือ <b>เพิ่มลงในหน้าจอหลัก</b>)</li>
+        <li>กด <b>ติดตั้ง</b> แล้วไอคอนจะขึ้นที่หน้าจอหลัก</li>
+      </ol>
+    </div>
+
+    <div id="panel-ios" role="tabpanel" class="hidden">
+      <ol class="steps">
+        <li>เปิดลิงก์นี้ด้วย <b>Safari</b> เท่านั้น</li>
+        <li>
+          กดปุ่ม <b>แชร์</b>
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m0 0L8 7m4-4l4 4M6 11H5a1 1 0 00-1 1v8a1 1 0 001 1h14a1 1 0 001-1v-8a1 1 0 00-1-1h-1"/></svg>
+          ที่แถบด้านล่าง (iPad อยู่ด้านบน)
+        </li>
+        <li>เลื่อนลงแล้วเลือก <b>เพิ่มลงในหน้าจอโฮม</b></li>
+        <li>กด <b>เพิ่ม</b> มุมขวาบน ไอคอนจะขึ้นที่หน้าจอโฮม</li>
+      </ol>
+      <div class="note">iPhone ไม่มีป๊อปอัปให้กดติดตั้งเหมือน Android จึงต้องทำตามขั้นตอนนี้เอง</div>
+    </div>
+
+    <div id="panel-windows" role="tabpanel" class="hidden">
+      <ol class="steps">
+        <li>เปิดลิงก์นี้ด้วย <b>Chrome</b> หรือ <b>Edge</b></li>
+        <li>กดไอคอนติดตั้ง <b>⊕</b> ที่ปลายแถบที่อยู่ (ด้านขวา)</li>
+        <li>กด <b>ติดตั้ง</b> แอปจะเปิดเป็นหน้าต่างของตัวเองและมีไอคอนบนเดสก์ท็อป</li>
+      </ol>
+      <div class="note">ถ้าไม่เห็นไอคอน ให้กดเมนู <b>⋮</b> เลือก <b>แอป</b> แล้วเลือก <b>ติดตั้งเว็บไซต์นี้เป็นแอป</b></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>วิทยาลัยอาชีวศึกษาชุมพร &copy; 2026</footer>
+
+<script>
+(function () {
+  var ua = navigator.userAgent || '';
+  var isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  var isAndroid = /Android/i.test(ua);
+  var isInApp = /Line\/|FBAN|FBAV|Instagram|MicroMessenger|; wv\)/i.test(ua);
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  var deferred = null;
+
+  function $(id) { return document.getElementById(id); }
+  function show(id) { $(id).classList.remove('hidden'); }
+  function hide(id) { $(id).classList.add('hidden'); }
+
+  /* ---------- แท็บวิธีติดตั้ง ---------- */
+  function pick(name) {
+    ['android', 'ios', 'windows'].forEach(function (t) {
+      var on = t === name;
+      $('tab-' + t).setAttribute('aria-selected', on ? 'true' : 'false');
+      $('panel-' + t).classList.toggle('hidden', !on);
+    });
+  }
+  document.querySelectorAll('.tab').forEach(function (b) {
+    b.addEventListener('click', function () { pick(b.getAttribute('data-t')); });
+  });
+  pick(isIOS ? 'ios' : (isAndroid ? 'android' : 'windows'));
+
+  /* ---------- ลงทะเบียน Service Worker ---------- */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+
+  /* ---------- สถานะหน้าจอ ---------- */
+  if (isStandalone) {
+    hide('installCard'); hide('guideCard'); show('installedCard');
+    return;
+  }
+
+  if (isInApp) {
+    show('inAppCard');
+    $('linkBox').value = location.href.split('#')[0];
+    $('copyBtn').addEventListener('click', function () {
+      var box = $('linkBox');
+      box.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      if (navigator.clipboard && !ok) { navigator.clipboard.writeText(box.value).catch(function () {}); }
+      $('copyBtn').textContent = 'คัดลอกแล้ว';
+      setTimeout(function () { $('copyBtn').textContent = 'คัดลอกลิงก์'; }, 2000);
+    });
+  }
+
+  /* ---------- ปุ่มติดตั้ง ---------- */
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+  });
+
+  window.addEventListener('appinstalled', function () {
+    deferred = null;
+    hide('installCard'); hide('guideCard'); hide('inAppCard'); show('installedCard');
+  });
+
+  function showFail(msg) {
+    var f = $('installFail');
+    f.textContent = msg;
+    f.classList.remove('hidden');
+  }
+
+  $('installBtn').addEventListener('click', function () {
+    hide('installFail');
+
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function (c) {
+        if (c.outcome !== 'accepted') showFail('คุณยังไม่ได้ติดตั้ง กดปุ่มอีกครั้งเมื่อพร้อม');
+        deferred = null;
+      });
+      return;
+    }
+
+    if (isIOS) {
+      pick('ios');
+      showFail('iPhone / iPad ต้องติดตั้งผ่าน Safari ตามขั้นตอนด้านล่างนี้');
+    } else if (isInApp) {
+      showFail('เปิดลิงก์ในเบราว์เซอร์ก่อน ตามคำแนะนำด้านบน');
+    } else {
+      showFail('เบราว์เซอร์นี้ยังไม่ขึ้นหน้าต่างติดตั้ง ลองตามขั้นตอนด้านล่าง หรือถ้าติดตั้งไปแล้ว ให้เปิดจากไอคอนบนเครื่อง');
+    }
+    $('guideCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+})();
+</script>
+</body>
+</html>
