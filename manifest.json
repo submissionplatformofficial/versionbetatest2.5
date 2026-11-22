@@ -1,8 +1,8 @@
 {
-  "name": "แพลตฟอร์มส่งงานและสั่งงานออนไลน์ วอศ.ชุมพร",
+  "name": "แพลตฟอร์มส่งงานและสั่งงานออนไลน์",
   "short_name": "ส่งงาน",
-  "start_url": "/versionbetatest2.5/index.html",
-  "scope": "/versionbetatest2.5/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b2f7a",
@@ -10,12 +10,14 @@
     {
       "src": "image/og-image.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "image/og-image.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }
